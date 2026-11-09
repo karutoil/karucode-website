@@ -62,7 +62,7 @@ src/
   components/
     ui/         Nav, Footer, SectionHead, Cmd — shared, do not fork
     hero/       Hero, CursorField (the canvas field), Readout (the boot card)
-    sections/   the seven numbered home sections
+    sections/   the seven numbered home sections, plus Coda (the light closing band)
   pages/        index, 404, docs/*, security
 public/         everything here is published verbatim, so keep it to what is used
   brand/        favicon.svg, mark.svg, og.png only

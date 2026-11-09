@@ -141,7 +141,9 @@
 
   --text: #141516;
   --text-2: #4b4d4e;
-  --text-3: #6b6d6c;
+  /* darker than the brand grey: on paper, 11px micro-labels set in #6b6d6c
+     land at 4.41:1 over the sunk surface and miss AA */
+  --text-3: #5f6160;
 
   --accent: var(--kc-gold-deep);
   --accent-hi: #6d4819;

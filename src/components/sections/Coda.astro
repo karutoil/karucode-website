@@ -1,0 +1,155 @@
+---
+/**
+ * The page's last word, on paper.
+ *
+ * It is the one light section on the site: after seven dark panels the switch
+ * to warm paper reads as a full stop, and `.on-light` re-points the whole
+ * semantic layer so the Cmd and buttons inside adapt without a second set of
+ * styles. Nothing new is claimed here — it restates the install and the
+ * numbers, so a reader who scrolled straight to the bottom still gets them.
+ */
+import Cmd from '../ui/Cmd.astro';
+import { SITE } from '../../site';
+---
+
+<section class="coda on-light" id="start" aria-labelledby="coda-title">
+  <div class="wrap coda__inner">
+    <div class="coda__copy reveal">
+      <p class="label coda__label">Ready when you are</p>
+      <h2 class="h1 coda__title" id="coda-title">
+        Ten megabytes. One file.<br />Your machine.
+      </h2>
+      <p class="lede coda__lede">
+        Build it, point it at a project, and the UI is already inside the binary. Nothing
+        to provision, and nothing to keep in sync.
+      </p>
+      <div class="coda__cta">
+        <a class="btn btn--primary btn--lg" href="/docs/quickstart/">Start in two commands</a>
+        <a class="btn btn--lg" href={SITE.repo} target="_blank" rel="noopener noreferrer">
+          Source on GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="coda__side reveal">
+      <Cmd
+        class="coda__cmd"
+        label="shell"
+        wrap
+        command="cargo run --release -p kc-server -- --workspace /path/to/your/project"
+      />
+      <dl class="coda__facts">
+        <div><dt>binary</dt><dd>10.5 MiB</dd></div>
+        <div><dt>idle rss</dt><dd>10.2 MiB</dd></div>
+        <div><dt>state</dt><dd>one SQLite file</dd></div>
+        <div><dt>licence</dt><dd>{SITE.license}</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<style>
+  .coda {
+    position: relative;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    padding-block: clamp(64px, 8vw, 120px);
+    overflow: hidden;
+  }
+
+  /* A soft warm wash behind the headline, so the paper is not perfectly flat.
+     Contained to the element: a fixed width wider than the viewport is what
+     puts a horizontal scrollbar on the page. */
+  .coda::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      120% 90% at 12% 0%,
+      rgb(223 182 128 / 0.18),
+      transparent 62%
+    );
+    pointer-events: none;
+  }
+
+  .coda__inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: clamp(32px, 4vw, 56px);
+  }
+
+  @media (min-width: 900px) {
+    .coda__inner {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      align-items: center;
+      column-gap: clamp(40px, 6vw, 96px);
+    }
+  }
+
+  .coda__label {
+    margin: 0 0 16px;
+    color: var(--text-3);
+  }
+
+  .coda__title {
+    margin: 0;
+    color: var(--text);
+    max-width: 18ch;
+  }
+
+  .coda__lede {
+    margin-top: 18px;
+    max-width: 44ch;
+    color: var(--text-2);
+  }
+
+  .coda__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: clamp(24px, 3vw, 34px);
+  }
+
+  .coda__side {
+    display: grid;
+    gap: 18px;
+    align-content: center;
+  }
+
+  .coda__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius);
+    overflow: hidden;
+  }
+
+  .coda__facts > div {
+    background: var(--bg);
+    padding: 12px 14px;
+  }
+
+  .coda__facts dt {
+    font-size: var(--fs-micro);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .coda__facts dd {
+    margin: 3px 0 0;
+    font-size: var(--fs-small);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  @media (max-width: 560px) {
+    .coda__cta .btn {
+      flex: 1 1 auto;
+    }
+  }
+</style>

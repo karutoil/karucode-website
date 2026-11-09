@@ -110,6 +110,9 @@ an empty page.
 
 - Body copy ≥ 4.5:1 against its background. `--text-3` (`#8b8d8c`) is the floor on
   dark — do not use it for anything smaller than 13px.
+- Light sections use the same rule against paper, where the brand greys fail at small
+  sizes: `.on-light` therefore overrides `--text-3` to `#5f6160`. Do not hard-code a
+  grey inside an `.on-light` section; use the token.
 - Real landmarks: one `h1` per page, headings in order, `<section>` with an accessible
   name (`aria-labelledby`) where it helps.
 - Every interactive control is a `<button>` or `<a>`, keyboard reachable, with a
