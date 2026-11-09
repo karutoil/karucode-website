@@ -61,7 +61,7 @@ src/
   layouts/      Base.astro (head, nav, footer, reveal observer)
   components/
     ui/         Nav, Footer, SectionHead, Cmd — shared, do not fork
-    hero/       the signature hero
+    hero/       Hero, CursorField (the canvas field), Readout (the boot card)
     sections/   the seven numbered home sections
   pages/        index, 404, docs/*, security
 public/         everything here is published verbatim, so keep it to what is used

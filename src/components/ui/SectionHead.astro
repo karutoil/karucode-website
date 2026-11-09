@@ -33,6 +33,45 @@ const { num, kicker, title, lede, id, align = 'start' } = Astro.props;
     margin-bottom: clamp(32px, 4vw, 56px);
   }
 
+  /* Wide screens: a single 62ch column leaves two thirds of the row empty and
+     makes every section look like a document rather than a page. From 1200px
+     the heading and its lede sit side by side on a shared baseline, which uses
+     the width without stretching the measure. */
+  @media (min-width: 1200px) {
+    .shead {
+      max-width: none;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      column-gap: clamp(40px, 5vw, 88px);
+      align-items: end;
+    }
+
+    .shead__label {
+      grid-column: 1 / -1;
+    }
+
+    .shead__title {
+      grid-column: 1;
+      align-self: end;
+    }
+
+    .shead__lede {
+      grid-column: 2;
+      max-width: 46ch;
+      padding-bottom: 0.35em;
+    }
+
+    /* centred variant keeps its own arrangement */
+    .shead--center {
+      max-width: 62ch;
+      grid-template-columns: 1fr;
+      justify-items: center;
+    }
+    .shead--center .shead__lede {
+      grid-column: 1;
+      text-align: center;
+    }
+  }
+
   .shead--center {
     margin-inline: auto;
     text-align: center;

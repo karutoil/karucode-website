@@ -23,6 +23,22 @@ the karucode repository (`README.md`, `reports/bench.md`, `docs/SECURITY.md`,
 
 Wordmark: Inter Bold, `-0.04em` tracking, `karu` in text colour and `code` in the accent.
 
+**Hero readout card** (`src/components/hero/Readout.astro`) — the values it displays,
+all from this file, so an edit can be checked against its source:
+
+| Row | Value shown | Where it comes from |
+| --- | --- | --- |
+| `api` | `127.0.0.1:8787 · UI, same origin` | default bind + embedded UI |
+| `loop` | `approvals · subagents · budgets` | architecture |
+| `model` | `any OpenAI-compatible endpoint` | provider |
+| `tools` | `read · search · edit · shell · git · mcp` | tools + MCP |
+| `state` | `one SQLite file, WAL mode` | architecture |
+| `budget` | `10,200 turns · 24 h wall clock` | `(max_continues + 1) × max_iterations` |
+| ready line | `ready in 7.9 ms · 10.2 MiB rss` | bench: cold start average, idle RSS |
+
+Do not add a row that is not in this table; the card is a claim about the running
+product, not decoration.
+
 ## What it does
 
 - **Adjective-free summary:** a coding agent, delivered as one 10.5 MiB Rust binary that

@@ -5,6 +5,7 @@
  */
 import Cmd from '../ui/Cmd.astro';
 import CursorField from './CursorField.astro';
+import Readout from './Readout.astro';
 ---
 
 <section class="hero" data-hero aria-labelledby="hero-title">
@@ -21,13 +22,8 @@ import CursorField from './CursorField.astro';
       </h1>
 
       <p class="lede hero__lede">
-        Ten and a half megabytes, a single SQLite file, and a UI served by the same process.
-        Nothing else to deploy: no Node at runtime, no queue, no plugin marketplace — just the
-        binary, your project, and the model endpoint you point it at.
-      </p>
-
-      <p class="mono hero__facts">
-        one 10.5 MiB binary · one SQLite file · any OpenAI-compatible endpoint
+        Ten and a half megabytes, one SQLite file, and a UI served by the same process.
+        Nothing to deploy but the binary.
       </p>
 
       <div class="hero__cta reveal">
@@ -45,6 +41,10 @@ import CursorField from './CursorField.astro';
         <span class="tick" aria-hidden="true"></span>
         Then try it on a real bug: <code>examples/demo-app</code> ships with two failing tests.
       </p>
+    </div>
+
+    <div class="hero__aside reveal">
+      <Readout />
     </div>
 
     <div class="hero__strip">
@@ -68,7 +68,9 @@ import CursorField from './CursorField.astro';
       /* The sticky nav is 68px + a 1px border and sits in flow above this, so
          the hero only has to fill what is left of the fold. Capped so a very
          tall window does not push the proof section off the page. */
-      min-height: min(calc(100svh - 69px), 960px);
+      /* 880 rather than a full fold: the content settles around 720-780px, and
+         forcing another 180px of empty hero only pushes the product shot away */
+      min-height: min(calc(100svh - 69px), 880px);
     }
   }
 
@@ -115,9 +117,69 @@ import CursorField from './CursorField.astro';
     padding-bottom: clamp(32px, 5.6vh, 64px);
   }
 
+  /* Two columns from 1080 up. Below that the copy is the whole hero and the
+     readout follows it; the card is what fills the right half on a wide screen,
+     so there is no half-empty field beside the headline at any size. */
+  @media (min-width: 1080px) {
+    .hero__inner {
+      display: grid;
+      /* the headline needs ~800px to break in three lines; the card is happy
+         narrower, so the copy column gets the lion's share */
+      grid-template-columns: minmax(0, 1.34fr) minmax(340px, 0.66fr);
+      grid-template-rows: auto 1fr auto;
+      align-content: start;
+      column-gap: clamp(40px, 5vw, 88px);
+    }
+
+    .hero__copy {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .hero__aside {
+      grid-column: 2;
+      grid-row: 1;
+      /* start level with the headline rather than the kicker, so the two
+         columns read as one composition instead of two stranded blocks */
+      align-self: start;
+      min-width: 0;
+      margin-top: clamp(30px, 4.2vh, 48px);
+    }
+
+    .hero__strip {
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
+  }
+
+  .hero__aside {
+    margin-top: clamp(28px, 4vh, 44px);
+  }
+
+  /* Below the two-column breakpoint the card would sit under the command, a
+     full screen below the headline — it would add 300px of scroll and no new
+     information, since the same facts are in the architecture section two
+     screens down. The phone hero stays: claim, one sentence, two buttons, the
+     command. */
+  @media (max-width: 1079px) {
+    .hero__aside {
+      display: none;
+    }
+  }
+
   .hero__copy {
     max-width: 60rem;
     margin-bottom: clamp(20px, 2.8vh, 34px);
+  }
+
+  @media (min-width: 1080px) {
+    .hero__copy {
+      margin-bottom: 0;
+    }
   }
 
   .hero__kicker {
@@ -139,15 +201,6 @@ import CursorField from './CursorField.astro';
     max-width: 52ch;
   }
 
-  .hero__facts {
-    margin-top: clamp(14px, 1.6vh, 20px);
-    font-size: var(--fs-label);
-    line-height: 1.5;
-    letter-spacing: 0.005em;
-    color: var(--text-3);
-    max-width: 86ch;
-  }
-
   .hero__cta {
     display: flex;
     flex-wrap: wrap;
@@ -155,6 +208,16 @@ import CursorField from './CursorField.astro';
     gap: 12px;
     margin-top: clamp(20px, 2.6vh, 30px);
     --reveal-delay: 90ms;
+  }
+
+  /* The glyph field is drawn behind the copy, so a transparent ghost button
+     lets characters read through its label. Only the hero needs the fill. */
+  .hero__cta :global(.btn:not(.btn--primary)) {
+    background: var(--bg);
+  }
+
+  .hero__cta :global(.btn:not(.btn--primary):hover) {
+    background: rgb(234 233 229 / 0.04);
   }
 
   .hero__note {

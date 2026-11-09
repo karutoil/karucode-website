@@ -79,7 +79,14 @@ const jsonLd = {
     <link rel="preload" href="/fonts/inter-700.woff2" as="font" type="font/woff2" crossorigin />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-    <noscript><style>.reveal { opacity: 1 !important; transform: none !important; }</style></noscript>
+    {/* Without JS nothing adds .is-in or .is-booted, so every element that
+        starts hidden has to be restored here — otherwise the page renders as a
+        stack of invisible sections. Keep this list in step with any component
+        that hides itself and reveals from script. */}
+    <noscript><style>
+      .reveal,
+      .readout__row { opacity: 1 !important; transform: none !important; }
+    </style></noscript>
   </head>
   <body class={bodyClass}>
     <a class="skip-link" href="#main">Skip to content</a>

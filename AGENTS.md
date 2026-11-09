@@ -83,6 +83,29 @@ Reference points, and what we are taking from each:
 9. **Density.** Use the page width. Big type, generous whitespace, hairline dividers.
    Avoid the generic "row of three identical rounded cards with an emoji icon".
 
+### Responsive rules
+
+Three sizes are the design targets: **390 (phone)**, **1920x1080** and **2560x1440**.
+Check all three before calling a layout done — a change that only looks right at 1440
+is not finished.
+
+- The frame widens past 1440, the *measure* does not: `--page` steps up to 1320 then
+  1400, but prose stays at its `ch` limit so lines never get long.
+- Display type answers to viewport height as well as width
+  (`@media (min-width: 1080px) and (max-height: 820px)`), because the headline is what
+  makes a hero spill past the fold on a 1366x768 laptop.
+- `SectionHead` goes two-column from 1200px: title left, lede right on a shared
+  baseline. Do not put a third thing in it.
+- The hero is one column below 1080 and two from 1080 up. The readout card is hidden
+  below 1080 on purpose — see `src/components/hero/Readout.astro`.
+
+### Anything that starts hidden must be restored without JS
+
+`.reveal` and `.readout__row` both start at `opacity: 0` and are revealed by script.
+The `<noscript>` block in `Base.astro` puts them back. **If you add a component that
+hides itself until script runs, add its selector to that block**, or no-JS readers get
+an empty page.
+
 ### Accessibility (non-negotiable)
 
 - Body copy ≥ 4.5:1 against its background. `--text-3` (`#8b8d8c`) is the floor on

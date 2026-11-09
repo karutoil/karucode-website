@@ -1,0 +1,304 @@
+---
+/**
+ * What the hero's right column shows: the server coming up.
+ *
+ * The headline claims "one binary, not a stack", and this is the receipt — one
+ * process reporting its five jobs, the single file it keeps state in, and what
+ * starting it actually costs. Every value traces to docs/FACTS.md.
+ *
+ * It is real text, not an image, so it stays selectable, translatable and
+ * readable by a screen reader. The boot sequence is decoration only: with JS
+ * off, or under prefers-reduced-motion, the rows are simply present.
+ */
+interface Row {
+  key: string;
+  value: string;
+}
+
+const rows: Row[] = [
+  { key: 'api', value: '127.0.0.1:8787 · UI, same origin' },
+  { key: 'loop', value: 'approvals · subagents · budgets' },
+  { key: 'model', value: 'any OpenAI-compatible endpoint' },
+  { key: 'tools', value: 'read · search · edit · shell · git · mcp' },
+  { key: 'state', value: 'one SQLite file, WAL mode' },
+  { key: 'budget', value: '10,200 turns · 24 h wall clock' },
+];
+---
+
+<figure class="readout" data-readout>
+  <figcaption class="readout__bar">
+    <span class="readout__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="readout__title mono">karucode serve</span>
+    <span class="readout__badge mono">one process</span>
+  </figcaption>
+
+  <div class="readout__body">
+    <p class="readout__cmd mono">
+      <span class="readout__prompt" aria-hidden="true">$</span>karucode serve --workspace .
+    </p>
+
+    <dl class="readout__rows">
+      {
+        rows.map((row) => (
+          <div class="readout__row" data-readout-row>
+            <dt class="mono">{row.key}</dt>
+            <dd class="mono">{row.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <p class="readout__ready mono" data-readout-ready>
+      <span class="readout__dot" aria-hidden="true"></span>
+      ready in 7.9 ms<span class="readout__sep" aria-hidden="true">·</span>10.2 MiB rss
+      <span class="readout__caret" aria-hidden="true"></span>
+    </p>
+  </div>
+</figure>
+
+<script>
+  // A boot sequence, not an animation: rows land in reading order, then the
+  // prompt gets its cursor. Anything that reduces motion gets the finished state.
+  const root = document.querySelector<HTMLElement>('[data-readout]');
+  if (root) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-readout-row]'));
+    if (reduce || !('IntersectionObserver' in window)) {
+      root.classList.add('is-booted');
+    } else {
+      const boot = () => {
+        rows.forEach((row, i) => row.style.setProperty('--boot-delay', `${180 + i * 90}ms`));
+        root.classList.add('is-booted');
+      };
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            boot();
+            io.disconnect();
+          }
+        },
+        { threshold: 0.25 },
+      );
+      io.observe(root);
+    }
+  }
+</script>
+
+<style>
+  .readout {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius-lg);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.022), transparent 42%),
+      var(--bg-sunk);
+    box-shadow: var(--shadow-lift);
+    overflow: hidden;
+    /* the card sits on a field of glyphs; a blur-free hairline of gold ties it
+       to the accent without becoming a second headline */
+    position: relative;
+  }
+
+  .readout::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1px solid rgb(223 182 128 / 0.14);
+  }
+
+  .readout__bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    background: rgb(255 255 255 / 0.015);
+  }
+
+  .readout__dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .readout__dots i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line-strong);
+  }
+
+  .readout__dots i:first-child {
+    background: rgb(223 182 128 / 0.55);
+  }
+
+  .readout__title {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .readout__badge {
+    margin-left: auto;
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--line-gold);
+    border-radius: 999px;
+    padding: 2px 9px 1px;
+    white-space: nowrap;
+  }
+
+  .readout__body {
+    padding: clamp(16px, 1.6vw, 22px);
+  }
+
+  .readout__cmd {
+    margin: 0 0 14px;
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .readout__prompt {
+    color: var(--accent);
+    margin-right: 0.55em;
+  }
+
+  .readout__rows {
+    margin: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .readout__row {
+    display: grid;
+    grid-template-columns: 4.6rem minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+    padding: 5px 0;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .readout__row:first-child {
+    border-top: 0;
+  }
+
+  .readout__row dt {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .readout__row dd {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+
+  .readout__ready {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+
+  .readout__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 3px rgb(136 186 160 / 0.14);
+    flex: none;
+  }
+
+  .readout__sep {
+    color: var(--text-3);
+  }
+
+  /* the prompt cursor: the same gold bar the hero field draws, at UI scale */
+  .readout__caret {
+    width: 2px;
+    height: 0.95em;
+    margin-left: 2px;
+    background: var(--accent);
+    opacity: 0;
+  }
+
+  /* ── boot sequence ───────────────────────────────────────────────────
+     Rows are legible without JS; this only decides when they fade in. */
+  .readout__row {
+    transition:
+      opacity var(--dur-slow) var(--ease),
+      transform var(--dur-slow) var(--ease);
+    transition-delay: var(--boot-delay, 0ms);
+  }
+
+  .readout:not(.is-booted) .readout__row {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  .readout__caret {
+    transition: opacity 120ms steps(1, end);
+  }
+
+  .readout.is-booted .readout__caret {
+    animation: readout-blink 1.15s steps(1, end) infinite;
+    animation-delay: 900ms;
+  }
+
+  @keyframes readout-blink {
+    0%,
+    55% {
+      opacity: 1;
+    }
+    56%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .readout__row {
+      transition: none;
+      opacity: 1;
+      transform: none;
+    }
+    .readout.is-booted .readout__caret {
+      animation: none;
+      opacity: 1;
+    }
+  }
+
+  /* a narrow card needs a narrower key column, or the values wrap one word
+     early for no reason */
+  @media (max-width: 1180px) {
+    .readout__row {
+      grid-template-columns: 3.7rem minmax(0, 1fr);
+      gap: 8px;
+    }
+    .readout__row dd {
+      font-size: 0.71875rem;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .readout__row {
+      grid-template-columns: 3.9rem minmax(0, 1fr);
+    }
+  }
+</style>
