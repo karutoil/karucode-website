@@ -1,0 +1,176 @@
+---
+/**
+ * 07 — Questions.
+ * A native <details> accordion: no JS, no ARIA to get wrong. The marker is drawn
+ * with two hairlines that cross into a plus and rotate into a minus.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+
+/** Trusted literals only: turns `backticked` words into <code>. */
+const md = (s: string) => s.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+const QA = [
+  {
+    q: 'Is this a hosted service?',
+    a: 'No. There is no signup, no pricing, no cloud. You run the binary; the browser UI is served by it. MIT licensed.',
+  },
+  {
+    q: 'Which model does it use?',
+    a: 'Anything that speaks the OpenAI chat-completions API with streaming tool calls — a gateway, vLLM, Ollama, llama.cpp, OpenRouter. The provider is install-wide; a session can pin its own provider, model and reasoning effort.',
+  },
+  {
+    q: 'Does it need Node at runtime?',
+    a: 'No. Node 22.12+ is only needed to build the frontend, which is embedded in the binary.',
+  },
+  {
+    q: 'Is the shell sandboxed?',
+    a: 'No — and that is stated plainly. Commands run as the server user; approvals are the gate. Use a container or VM for untrusted code or unattended `auto` mode. File tools are confined: no `..`, no absolute paths outside, symlink escapes refused, writes atomic.',
+  },
+  {
+    q: 'What happens when the iteration budget runs out?',
+    a: 'A run is not allowed to die because it used its first budget. The budget belongs to a segment; when it ends mid-task the runtime writes a `[runtime checkpoint]` turn and continues in the same session, run and transcript — up to ~10,200 turns or a 24 h wall clock.',
+  },
+  {
+    q: 'What does it send to my provider?',
+    a: 'The conversation, tool results and the model’s requests — nothing else. There is no telemetry in the product, and child processes get a credential-free environment allowlist so a prompt-injected `curl` cannot read the harness token or the provider key.',
+  },
+];
+---
+
+<section class="section section--divided" id="faq" aria-labelledby="faq-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="07"
+        kicker="Questions"
+        title="The things people ask first."
+        lede="Straight answers, including the ones with a no in them."
+        id="faq-head"
+      />
+    </div>
+
+    <div class="faq">
+      {
+        QA.map((item, i) => (
+          <details class="qa" open={i === 0}>
+            <summary class="qa__summary">
+              <h3 class="qa__q h3">{item.q}</h3>
+              <span class="qa__mark" aria-hidden="true" />
+            </summary>
+            <div class="qa__a">
+              <p set:html={md(item.a)} />
+            </div>
+          </details>
+        ))
+      }
+    </div>
+
+    <p class="faq__more">
+      Configuration, the HTTP API and the security model are in the
+      <a class="link" href="/docs/">documentation</a>.
+    </p>
+  </div>
+</section>
+
+<style>
+  .faq {
+    border-top: 1px solid var(--line);
+  }
+
+  .qa {
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .qa__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 0;
+    cursor: pointer;
+    list-style: none;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .qa__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .qa__summary::marker {
+    content: '';
+  }
+
+  .qa__q {
+    margin: 0;
+    color: var(--text-2);
+    transition: color var(--dur) var(--ease);
+    text-wrap: balance;
+  }
+
+  .qa__summary:hover .qa__q,
+  .qa[open] .qa__q {
+    color: var(--text);
+  }
+
+  /* marker: two hairlines, one rotating away */
+  .qa__mark {
+    position: relative;
+    flex: none;
+    width: 14px;
+    height: 14px;
+  }
+
+  .qa__mark::before,
+  .qa__mark::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 14px;
+    height: 1px;
+    background: var(--text-3);
+    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  .qa__mark::after {
+    transform: rotate(90deg);
+  }
+
+  .qa[open] .qa__mark::before {
+    background: var(--accent);
+  }
+
+  .qa[open] .qa__mark::after {
+    transform: rotate(0deg);
+    background: var(--accent);
+  }
+
+  .qa__a {
+    padding: 0 0 24px;
+    max-width: 74ch;
+  }
+
+  .qa__a p {
+    font-size: var(--fs-body);
+    line-height: 1.65;
+    color: var(--text-2);
+    text-wrap: pretty;
+  }
+
+  .qa__a :global(code) {
+    font-size: 0.875rem;
+  }
+
+  .faq__more {
+    margin-top: clamp(22px, 2.6vw, 30px);
+    font-size: var(--fs-small);
+    color: var(--text-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .qa__mark::before,
+    .qa__mark::after {
+      transition: none;
+    }
+  }
+</style>

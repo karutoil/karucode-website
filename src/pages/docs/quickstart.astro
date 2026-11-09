@@ -1,0 +1,251 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import Cmd from '../../components/ui/Cmd.astro';
+import Callout from '../../components/docs/Callout.astro';
+import { SITE } from '../../site';
+
+const TOC = [
+  { id: 'prerequisites', label: 'Prerequisites' },
+  { id: 'get-the-code', label: 'Get the code' },
+  { id: 'point-it-at-a-model', label: 'Point it at a model' },
+  { id: 'run-it', label: 'Run it' },
+  { id: 'flags', label: 'Flags' },
+  { id: 'try-it-on-a-real-bug', label: 'Try it on a real bug' },
+  { id: 'providers-that-work', label: 'Providers that work' },
+  { id: 'server-installs', label: 'Server installs' },
+  { id: 'exposing-it', label: 'Exposing it' },
+];
+
+const FLAGS = [
+  { flag: '--help', meaning: 'Every flag the binary takes, as built.' },
+  { flag: '--host', meaning: 'Bind address. Overrides KARUCODE_HOST.' },
+  { flag: '--port', meaning: 'Port. Overrides KARUCODE_PORT; the default is 8787.' },
+  { flag: '--workspace', meaning: 'The default workspace root. Overrides KARUCODE_WORKSPACE.' },
+  { flag: '--data-dir', meaning: 'Where the SQLite database and plugin data live.' },
+  { flag: '--config', meaning: 'Path to the TOML config file. Overrides KARUCODE_CONFIG.' },
+];
+
+const PROVIDERS = [
+  { name: 'LiteLLM proxy', url: 'http://127.0.0.1:4000/v1' },
+  { name: 'vLLM', url: 'http://127.0.0.1:8000/v1' },
+  { name: 'Ollama', url: 'http://127.0.0.1:11434/v1' },
+  { name: 'llama.cpp server', url: 'http://127.0.0.1:8080/v1' },
+  { name: 'OpenRouter', url: 'https://openrouter.ai/api/v1' },
+];
+---
+
+<Docs
+  title="Quick start"
+  description="Clone karucode, point it at an OpenAI-compatible endpoint, run the server, and give it a task."
+  path="/docs/quickstart/"
+  section="Docs"
+  lede="Clone it, point it at a model, run a task."
+  toc={TOC}
+  edit={`${SITE.repo}/blob/main/README.md`}
+  prev={{ href: '/docs/', title: 'Overview' }}
+  next={{ href: '/docs/configuration/', title: 'Configuration' }}
+>
+  <p>
+    Most of the time in this page goes into the first <code>cargo build</code>. You need a machine
+    that can compile Rust, and an OpenAI-compatible endpoint — a local gateway, a hosted API, or a
+    model server you already run.
+  </p>
+
+  <h2 id="prerequisites">Prerequisites</h2>
+  <ul>
+    <li><strong>Rust 1.89+</strong> — <code>rustup</code> is the usual way to get it.</li>
+    <li>
+      <strong>Node 22.12+</strong> — only to build the frontend. <code>cargo build</code> runs the
+      frontend build for you; nothing needs Node at runtime.
+    </li>
+    <li><strong>Linux</strong> — the primary target. Other Unixes should work.</li>
+    <li>
+      Optional: <code>git</code>, and <code>ripgrep</code> — there is a pure-Rust search fallback if
+      you don’t have it.
+    </li>
+  </ul>
+  <p>
+    That is the whole list. There is no cloud account, no signup and no telemetry: the binary talks
+    to the endpoint you give it and to nothing else.
+  </p>
+
+  <h2 id="get-the-code">Get the code</h2>
+  <Cmd label="shell" wrap command="git clone https://github.com/karutoil/karucode && cd karucode" />
+  <p>
+    The repository holds the server, the embedded UI and the packaging files. Nothing needs
+    installing at runtime — the binary is the deployment.
+  </p>
+
+  <h2 id="point-it-at-a-model">Point it at a model</h2>
+  <p>
+    Three variables. <code>KARUCODE_BASE_URL</code> is the gateway, <code>KARUCODE_API_KEY</code> is
+    what it authenticates with (it falls back to <code>OPENAI_API_KEY</code>), and
+    <code>KARUCODE_MODEL</code> is the model id you want.
+  </p>
+  <Cmd
+    label="shell"
+    prompt=""
+    wrap
+    command={`export KARUCODE_BASE_URL=http://127.0.0.1:4000/v1
+export KARUCODE_API_KEY=sk-...
+export KARUCODE_MODEL=gpt-4o-mini`}
+  />
+  <p>
+    <code>base_url</code> is a prefix, not a full URL: karucode appends
+    <code>/chat/completions</code> to it. Point it at the <code>/v1</code> root of your gateway, not
+    at a single endpoint.
+  </p>
+
+  <h2 id="run-it">Run it</h2>
+  <Cmd
+    label="shell"
+    wrap
+    command="cargo run --release -p kc-server -- --workspace /path/to/your/project"
+  />
+  <p>
+    <code>cargo build</code> also builds and embeds the frontend, so that one build is the whole
+    build. Then open <a href="http://127.0.0.1:8787">http://127.0.0.1:8787</a>, create a session,
+    type a task, and approve the commands you want it to run.
+  </p>
+  <p>
+    The default approval mode is <code>ask</code>: shell commands and file writes wait for you. You
+    can answer allow-once, allow-for-session or deny, and every decision is recorded.
+  </p>
+
+  <h2 id="flags">Flags</h2>
+  <p>
+    A flag beats the environment variable of the same name for the process it starts, which is the
+    quickest way to run two instances with two different workspaces.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Flag</th>
+          <th scope="col">Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          FLAGS.map((f) => (
+            <tr>
+              <td>{f.flag}</td>
+              <td>{f.meaning}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="try-it-on-a-real-bug">Try it on a real bug</h2>
+  <p>
+    <code>examples/demo-app</code> in the repo is a dependency-free Node project with a planted bug:
+    <code>add()</code> subtracts instead of adding, so two of its five tests fail. Start the server
+    against it:
+  </p>
+  <Cmd label="shell" wrap command="cargo run --release -p kc-server -- --workspace examples/demo-app" />
+  <p>Then give it this prompt:</p>
+  <blockquote>
+    <p>
+      Run the tests, find the failing cases, fix the bug in src/math.js, and re-run the tests to prove
+      it passes.
+    </p>
+  </blockquote>
+  <p>
+    Watch what it does: it runs the tests, reads the failures, opens the file, edits one function, and
+    runs the tests again. You will be asked before the first command and before the write. That
+    loop — run, read, change, prove — is the whole product.
+  </p>
+
+  <h2 id="providers-that-work">Providers that work</h2>
+  <p>
+    Anything that speaks the OpenAI chat-completions API with streaming tool calls. These are the
+    shapes people point it at most often:
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Provider</th>
+          <th scope="col">KARUCODE_BASE_URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          PROVIDERS.map((p) => (
+            <tr>
+              <td>{p.name}</td>
+              <td>
+                <code>{p.url}</code>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p>
+    With Ollama, tool calling depends on the model you pull — a model that cannot emit tool calls
+    cannot drive the agent. Provider profiles are install-wide; a session can pin its own model,
+    provider and reasoning effort. See <a href="/docs/configuration/">Configuration</a>.
+  </p>
+
+  <h2 id="server-installs">Server installs</h2>
+  <p>
+    For anything long-lived, <code>packaging/</code> in the repo holds a container build and a
+    systemd installer. Release tarballs are verified against the release <code>SHA256SUMS</code>
+    before install, and nothing is piped from the network into a shell — there is no
+    <code>curl | bash</code> installer.
+  </p>
+  <Cmd
+    label="container"
+    prompt=""
+    wrap
+    command={`docker build -t karucode packaging/
+docker run --rm -p 127.0.0.1:8787:8787 \\
+  -e KARUCODE_BASE_URL=http://127.0.0.1:4000/v1 \\
+  --mount type=bind,source="$PWD",target=/workspace \\
+  karucode`}
+  />
+  <p>And the systemd path, run from an unpacked, verified release tarball:</p>
+  <Cmd label="systemd" wrap command="sha256sum -c SHA256SUMS && ./packaging/install.sh" />
+  <p>
+    The container is also the answer to the next section: it is the isolation boundary karucode
+    itself does not provide.
+  </p>
+
+  <h2 id="exposing-it">Exposing it</h2>
+  <Callout kind="danger" title="Not for a public interface as-is">
+    <p>
+      karucode binds to <code>127.0.0.1</code> by default and refuses a non-loopback bind unless
+      <code>KARUCODE_AUTH_TOKEN</code> is set to at least 16 characters. There is no TLS in the
+      binary: put a reverse proxy in front of it for remote access.
+    </p>
+    <p>
+      Shell commands run as the server user and are not sandboxed. If the workspace is untrusted, run
+      the whole thing inside a container or a VM. <a href="/security/">Security</a> is the full
+      version of this page.
+    </p>
+  </Callout>
+</Docs>
+
+<style>
+  .table-wrap code {
+    font-size: 0.8125rem;
+  }
+
+  /* At phone width the URL column is the only thing that doesn't fit; let it
+     break rather than hide half of it behind a horizontal scroll. */
+  @media (max-width: 560px) {
+    .table-wrap :global(code) {
+      font-size: 0.75rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .table-wrap :global(td) {
+      padding: 10px 12px;
+    }
+  }
+</style>

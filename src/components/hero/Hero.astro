@@ -1,0 +1,242 @@
+---
+/**
+ * The hero: one claim, one command, and a glyph field with a prompt cursor
+ * drifting through it. Everything here traces to docs/FACTS.md.
+ */
+import Cmd from '../ui/Cmd.astro';
+import CursorField from './CursorField.astro';
+---
+
+<section class="hero" data-hero aria-labelledby="hero-title">
+  <div class="hero__depth" aria-hidden="true"></div>
+  <div class="hero__rules" aria-hidden="true"></div>
+  <CursorField />
+
+  <div class="wrap wrap--wide hero__inner">
+    <div class="hero__copy reveal">
+      <p class="label hero__kicker">10.5 mib · 10.2 mib rss · no node at runtime</p>
+
+      <h1 class="display hero__title" id="hero-title">
+        A coding agent that is one binary, <span class="hero__accent">not a stack.</span>
+      </h1>
+
+      <p class="lede hero__lede">
+        Ten and a half megabytes, a single SQLite file, and a UI served by the same process.
+        Nothing else to deploy: no Node at runtime, no queue, no plugin marketplace — just the
+        binary, your project, and the model endpoint you point it at.
+      </p>
+
+      <p class="mono hero__facts">
+        one 10.5 MiB binary · one SQLite file · any OpenAI-compatible endpoint
+      </p>
+
+      <div class="hero__cta reveal">
+        <a class="btn btn--primary btn--lg" href="/docs/quickstart/">Install in two commands</a>
+        <a class="btn btn--lg" href="/docs/">Read the docs</a>
+      </div>
+
+      <Cmd
+        class="hero__cmd"
+        label="shell"
+        command="cargo run --release -p kc-server -- --workspace ."
+      />
+
+      <p class="hero__note mono">
+        <span class="tick" aria-hidden="true"></span>
+        Then try it on a real bug: <code>examples/demo-app</code> ships with two failing tests.
+      </p>
+    </div>
+
+    <div class="hero__strip">
+      <p class="hero__pillars mono">read · search · edit · shell · git · subagents · mcp</p>
+      <p class="hero__lic mono">MIT licensed<span class="hero__sep" aria-hidden="true">·</span>Rust 1.89+</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  @media (min-width: 861px) {
+    .hero {
+      /* The sticky nav is 68px + a 1px border and sits in flow above this, so
+         the hero only has to fill what is left of the fold. Capped so a very
+         tall window does not push the proof section off the page. */
+      min-height: min(calc(100svh - 69px), 960px);
+    }
+  }
+
+  /* A very faint static halo behind the headline, for depth under the field. */
+  .hero__depth {
+    position: absolute;
+    z-index: 0;
+    left: 4%;
+    top: -12%;
+    width: min(1080px, 96vw);
+    height: 88%;
+    pointer-events: none;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      transparent
+    );
+  }
+
+  /* Hairline vertical rule grid, 72px pitch, faded at the top and the edges. */
+  .hero__rules {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 72px 100%;
+    background-position: 0 0;
+    mask-image:
+      linear-gradient(180deg, transparent 0, black 16%, black 82%, transparent 100%),
+      linear-gradient(90deg, transparent 0, black 8%, black 92%, transparent 100%);
+    mask-composite: intersect;
+  }
+
+  .hero__inner {
+    position: relative;
+    z-index: 2;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    /* the nav is already above the hero in flow; this is breathing room */
+    padding-top: clamp(34px, 5.2vh, 64px);
+    /* keeps the hero's last line clear of the proof section's -40px pull-up */
+    padding-bottom: clamp(32px, 5.6vh, 64px);
+  }
+
+  .hero__copy {
+    max-width: 60rem;
+    margin-bottom: clamp(20px, 2.8vh, 34px);
+  }
+
+  .hero__kicker {
+    margin: 0;
+  }
+
+  .hero__title {
+    margin-top: clamp(14px, 1.6vh, 20px);
+    color: var(--text);
+  }
+
+  /* the only gold text in the hero */
+  .hero__accent {
+    color: var(--accent);
+  }
+
+  .hero__lede {
+    margin-top: clamp(16px, 2vh, 24px);
+    max-width: 52ch;
+  }
+
+  .hero__facts {
+    margin-top: clamp(14px, 1.6vh, 20px);
+    font-size: var(--fs-label);
+    line-height: 1.5;
+    letter-spacing: 0.005em;
+    color: var(--text-3);
+    max-width: 86ch;
+  }
+
+  .hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: clamp(20px, 2.6vh, 30px);
+    --reveal-delay: 90ms;
+  }
+
+  .hero__note {
+    position: relative;
+    margin-top: 12px;
+    padding-left: 22px;
+    font-size: 0.75rem;
+    line-height: 1.65;
+    color: var(--text-2);
+    max-width: 80ch;
+  }
+
+  /* the marker hangs in the gutter so the sentence stays one flowing line */
+  .hero__note .tick {
+    position: absolute;
+    left: 0;
+    top: 0.8em;
+    width: 12px;
+  }
+
+  .hero__strip {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px 28px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .hero__pillars,
+  .hero__lic {
+    font-size: var(--fs-micro);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+
+  .hero__sep {
+    padding-inline: 0.7em;
+    color: var(--text-3);
+  }
+
+  /* the shared Cmd is a child component, so its hook has to escape the scope */
+  :global(.hero__cmd) {
+    max-width: 40rem;
+    margin-top: clamp(20px, 2.4vh, 28px);
+    box-shadow: var(--shadow);
+  }
+
+  @media (max-width: 700px) {
+    /* a phone has no vertical slack to spend, so the rhythm tightens */
+    .hero__inner {
+      padding-top: 34px;
+      padding-bottom: 32px;
+    }
+
+    .hero__copy {
+      max-width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .hero__strip {
+      padding-top: 12px;
+    }
+
+    .hero__cta .btn {
+      flex: 1 1 auto;
+    }
+
+    :global(.hero__cmd) {
+      max-width: 100%;
+    }
+
+    /* the one-line command is the hero's evidence: on a phone let it wrap
+       instead of hiding half of it behind a horizontal scroll */
+    :global(.hero__cmd .cmd__line) {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      overflow-x: visible;
+    }
+  }
+</style>

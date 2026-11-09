@@ -1,0 +1,380 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import Callout from '../../components/docs/Callout.astro';
+import { SITE } from '../../site';
+
+const TOC = [
+  { id: 'precedence', label: 'Precedence' },
+  { id: 'environment-variables', label: 'Environment variables' },
+  { id: 'limits', label: 'Limits' },
+  { id: 'providers', label: 'Providers' },
+  { id: 'plugins-and-mcp', label: 'Plugins and MCP' },
+  { id: 'approvals', label: 'Approvals' },
+];
+
+const ENV = [
+  {
+    names: ['KARUCODE_HOST', 'KARUCODE_PORT'],
+    def: '127.0.0.1 / 8787',
+    meaning: 'bind address; a non-loopback bind needs a token',
+  },
+  { names: ['KARUCODE_WORKSPACE'], def: 'cwd', meaning: 'default workspace root' },
+  {
+    names: ['KARUCODE_DATA_DIR'],
+    def: '~/.local/share/karucode',
+    meaning: 'SQLite database + plugin data, mode 0700',
+  },
+  {
+    names: ['KARUCODE_AUTH_TOKEN'],
+    def: 'unset',
+    meaning: 'bearer token for remote access (≥16 chars)',
+  },
+  {
+    names: ['KARUCODE_ADMIN_TOKEN'],
+    def: 'unset',
+    meaning: 'required to change approvals or the endpoint',
+  },
+  {
+    names: ['KARUCODE_PROJECT_ROOTS'],
+    def: 'unset (any dir)',
+    meaning: 'colon-separated allowlist for new project roots',
+  },
+  {
+    names: ['KARUCODE_ALLOW_TEMP_DIR'],
+    def: 'true',
+    meaning: 'let file tools also reach the system temp dir',
+  },
+  {
+    names: ['KARUCODE_BASE_URL'],
+    def: 'http://127.0.0.1:4000/v1',
+    meaning: 'OpenAI-compatible base URL',
+  },
+  {
+    names: ['KARUCODE_API_KEY'],
+    def: 'unset',
+    meaning: 'provider key (falls back to OPENAI_API_KEY)',
+  },
+  { names: ['KARUCODE_MODEL'], def: 'gpt-4o-mini', meaning: 'model id' },
+  {
+    names: ['KARUCODE_APPROVAL_MODE'],
+    def: 'ask',
+    meaning: 'ask, ask_commands, auto, read_only',
+  },
+  {
+    names: ['KARUCODE_ALLOW_COMMANDS'],
+    def: 'empty',
+    meaning: 'command prefixes that are never prompted for',
+  },
+  { names: ['KARUCODE_MAX_ITERATIONS'], def: '200', meaning: 'model turns per segment' },
+  { names: ['KARUCODE_MAX_CONTINUES'], def: '50', meaning: 'budget refreshes per run' },
+  { names: ['KARUCODE_MAX_RUN_SECS'], def: '86400', meaning: 'hard wall clock for a whole run' },
+  { names: ['KARUCODE_COMMAND_TIMEOUT_SECS'], def: '120', meaning: 'default shell timeout' },
+  {
+    names: ['KARUCODE_MAX_TOOL_OUTPUT_BYTES'],
+    def: '24000',
+    meaning: 'tool result bytes kept for the model',
+  },
+  {
+    names: ['KARUCODE_CONTEXT_MAX_CHARS'],
+    def: '0',
+    meaning: '0 = derive from the model’s window',
+  },
+  {
+    names: ['KARUCODE_SUBAGENT_CONCURRENCY'],
+    def: '3',
+    meaning: 'concurrent subagents (0 = no ceiling)',
+  },
+  {
+    names: ['KARUCODE_SUBAGENT_MAX_BACKGROUND'],
+    def: '8',
+    meaning: 'live detached agents per session',
+  },
+  {
+    names: ['KARUCODE_ALLOW_RECURSIVE_SUBAGENTS'],
+    def: 'false',
+    meaning: 'nested delegation',
+  },
+  {
+    names: ['KARUCODE_LOG'],
+    def: 'info',
+    meaning: 'tracing filter, e.g. info,karucode=debug',
+  },
+  {
+    names: ['KARUCODE_ALLOWED_HOSTS'],
+    def: 'empty',
+    meaning: 'extra Host names for the loopback guard',
+  },
+];
+
+const MODES = [
+  { mode: 'ask', meaning: 'Shell commands and file writes wait for you. The default.' },
+  { mode: 'ask_commands', meaning: 'Shell commands wait; file writes do not.' },
+  {
+    mode: 'auto',
+    meaning: 'Nothing waits. Only for a workspace you would let the model change unattended.',
+  },
+  { mode: 'read_only', meaning: 'No shell commands and no writes.' },
+];
+---
+
+<Docs
+  title="Configuration"
+  description="How karucode resolves settings: precedence, environment variables, the TOML config file, limits, providers, plugins, MCP and approvals."
+  path="/docs/configuration/"
+  section="Docs"
+  lede="Four layers of settings, and the keys that actually matter."
+  toc={TOC}
+  edit={SITE.repo}
+  prev={{ href: '/docs/quickstart/', title: 'Quick start' }}
+  next={{ href: '/security/', title: 'Security' }}
+>
+  <h2 id="precedence">Precedence</h2>
+  <p>
+    Every setting can arrive four ways. When two of them disagree, the higher one wins, and the order
+    is fixed:
+  </p>
+  <ol>
+    <li>Overrides saved from the UI, in the SQLite <code>settings</code> table.</li>
+    <li>Environment variables.</li>
+    <li>
+      The config file at <code>KARUCODE_CONFIG</code> — default
+      <code>~/.config/karucode/config.toml</code>.
+    </li>
+    <li>Built-in defaults.</li>
+  </ol>
+  <p>
+    The first layer is the one that surprises people: a value you changed in the browser keeps
+    beating the environment on the next start, because it is stored in the database, and the
+    database outranks the environment.
+  </p>
+
+  <Callout kind="note" title="KARUCODE_LOCK_SETTINGS=1">
+    <p>
+      Setting this removes layer 1 entirely: the UI stops writing settings and browser attempts to
+      change them are rejected with <code>403</code>. The environment and the config file become the
+      only sources, which is what you want when a deployment is managed by something else.
+    </p>
+  </Callout>
+
+  <h2 id="environment-variables">Environment variables</h2>
+  <p>
+    The table is the reference. Anything not listed here still has a config-file equivalent or a
+    flag on the binary — <code>--help</code> lists the flags.
+  </p>
+  <div class="table-wrap kc-env">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Variable</th>
+          <th scope="col">Default</th>
+          <th scope="col">Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          ENV.map((row) => (
+            <tr>
+              <td>
+                {row.names.map((name, i) => (
+                  <>
+                    <code>{name}</code>
+                    {i < row.names.length - 1 ? <span class="kc-sep"> / </span> : null}
+                  </>
+                ))}
+              </td>
+              <td class="kc-def">{row.def}</td>
+              <td>{row.meaning}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="limits">Limits</h2>
+  <p>
+    The limits block is where a long run is defined. These four values are the defaults they replace:
+  </p>
+  <pre class="code">{`[limits]
+max_iterations = 200
+max_run_secs = 86400
+auto_continue = true
+max_continues = 50`}</pre>
+  <ul>
+    <li>
+      <code>max_iterations</code> — model turns allowed in a single segment, before the budget is
+      refreshed.
+    </li>
+    <li><code>max_continues</code> — how many times the budget may be refreshed in one run.</li>
+    <li>
+      <code>auto_continue</code> — refresh the budget and keep going instead of stopping when a
+      segment runs out.
+    </li>
+    <li>
+      <code>max_run_secs</code> — a hard wall clock for the whole run. <code>86400</code> is 24
+      hours.
+    </li>
+  </ul>
+  <p>
+    Together they give the ceiling: <code>200 × (50 + 1) = 10,200</code> turns, or 24 hours,
+    whichever comes first. Lower <code>max_continues</code> if you want a run to stop at a size you
+    can read in one sitting.
+  </p>
+
+  <h2 id="providers">Providers</h2>
+  <p>
+    A provider is a name, a base URL and the key to send. Named profiles let you keep several and
+    switch the active one without editing the environment:
+  </p>
+  <pre class="code">{`active_provider = "gateway"
+active_model = "gpt-4o-mini"
+
+[[providers]]
+id = "gateway"
+name = "Local gateway"
+provider = "openai"
+base_url = "http://127.0.0.1:4000/v1"
+api_key = "sk-..."
+request_timeout_secs = 600`}</pre>
+  <p>
+    <code>base_url</code> is a prefix — karucode appends <code>/chat/completions</code>. Providers are
+    install-wide, not per project; a <em>session</em> can pin its own provider, model and reasoning
+    effort, and that pin travels with the session rather than the checkout.
+  </p>
+
+  <h2 id="plugins-and-mcp">Plugins and MCP</h2>
+  <p>
+    Both are separate processes. A plugin speaks versioned JSON-RPC over stdio; an MCP server speaks
+    MCP over stdio or streamable HTTP. Declared, they look like this:
+  </p>
+  <pre class="code">{`[[plugins]]
+name = "background-terminals"
+command = "kc-plugin-terminals"
+args = ["--stdio"]
+
+[[mcp_servers]]
+name = "kg"
+command = "kg-mcp"
+args = ["--kb", "karucode"]
+transport = "stdio"`}</pre>
+  <p>
+    Tools are namespaced so nothing can shadow a built-in: <code>plugin__&lt;name&gt;__&lt;tool&gt;</code>
+    and <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>. MCP surfaces tools only — resources and
+    prompts are not exposed — and the legacy SSE-only transport is not implemented.
+  </p>
+  <p>
+    Neither kind is sandboxed. A plugin runs with your permissions, and changing its binary needs a
+    restart: there is no hot reload. Read the code before you add it, and see
+    <a href="/security/">Security</a>.
+  </p>
+
+  <h2 id="approvals">Approvals</h2>
+  <p>
+    One variable picks the gate: <code>KARUCODE_APPROVAL_MODE</code>. It decides what the agent must
+    ask for before it acts.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Mode</th>
+          <th scope="col">What happens</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          MODES.map((m) => (
+            <tr>
+              <td>{m.mode}</td>
+              <td>{m.meaning}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Two more keys change the edges of that gate. <code>KARUCODE_ALLOW_COMMANDS</code> is a list of
+    command prefixes that are never prompted for — <code>cargo test</code> is the obvious entry.
+    <code>KARUCODE_ADMIN_TOKEN</code> is required to change approvals or the endpoint at all, so a
+    session token cannot widen its own permissions.
+  </p>
+  <p>
+    Approvals are a gate, not isolation: an approved command runs as the server user with no sandbox
+    around it. <code>auto</code> mode is only safe for a workspace you would hand to the model
+    directly.
+  </p>
+</Docs>
+
+<style>
+  .kc-env td {
+    line-height: 1.55;
+  }
+
+  .kc-sep {
+    color: var(--text-3);
+  }
+
+  .kc-def {
+    font-family: var(--kc-font-mono);
+    font-size: 0.8125rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 700px) {
+    .kc-def {
+      white-space: normal;
+    }
+  }
+
+  /* 23 rows in three columns is unreadable at phone width if two thirds of it
+     hide behind a horizontal scroll, so the reference table stacks instead. */
+  @media (max-width: 620px) {
+    .kc-env thead {
+      display: none;
+    }
+
+    .kc-env table,
+    .kc-env tbody,
+    .kc-env tr,
+    .kc-env td {
+      display: block;
+      width: 100%;
+    }
+
+    .kc-env tr {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .kc-env tr:last-child {
+      border-bottom: 0;
+    }
+
+    .kc-env td {
+      border: 0;
+      padding: 0;
+      white-space: normal;
+    }
+
+    .kc-env td.kc-def {
+      margin-top: 3px;
+    }
+
+    .kc-env td.kc-def::before {
+      content: 'default';
+      margin-right: 8px;
+      font-family: var(--kc-font-mono);
+      font-size: var(--fs-micro);
+      letter-spacing: var(--tracking-label);
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    .kc-env td:last-child {
+      margin-top: 5px;
+      font-size: var(--fs-small);
+    }
+  }
+</style>

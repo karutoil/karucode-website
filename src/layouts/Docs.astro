@@ -1,0 +1,451 @@
+---
+/**
+ * The documentation shell: header, "On this page" sidebar, article, pager.
+ * Base.astro owns nav/footer/reveal; this adds the docs chrome on top of it.
+ * The `toc` ids must exist as real heading ids in the page body — they are
+ * written by hand so anchors never move.
+ */
+import Base from './Base.astro';
+import { SITE } from '../site';
+
+export interface TocItem {
+  id: string;
+  label: string;
+}
+
+export interface PageLink {
+  href: string;
+  title: string;
+}
+
+interface Props {
+  /** the page's h1 */
+  title: string;
+  /** the <title> text, when the h1 is not a good document title */
+  headTitle?: string;
+  description?: string;
+  /** path with leading slash, used for the canonical URL */
+  path: string;
+  /** short mono kicker above the h1: "Docs" or "Security" */
+  section: string;
+  lede: string;
+  toc: TocItem[];
+  /** destination of the "Edit on GitHub" link */
+  edit?: string;
+  prev?: PageLink;
+  next?: PageLink;
+}
+
+const {
+  title,
+  headTitle,
+  description = SITE.description,
+  path,
+  section,
+  lede,
+  toc,
+  edit = SITE.repo,
+  prev,
+  next,
+} = Astro.props;
+---
+
+<Base title={headTitle ?? title} description={description} path={path} bodyClass="page-docs">
+  <div class="docs">
+    <div class="wrap docs__shell">
+      <header class="docs__head">
+        <p class="label docs__kicker">{section}</p>
+
+        <div class="docs__head-row">
+          <div class="docs__head-text">
+            <h1 class="h1 docs__title">{title}</h1>
+            <p class="lede docs__lede">{lede}</p>
+          </div>
+
+          <a class="docs__edit" href={edit} target="_blank" rel="noopener noreferrer">
+            <span>Edit on GitHub</span>
+            <span class="vh">(opens in a new tab)</span>
+            <svg
+              viewBox="0 0 12 12"
+              width="12"
+              height="12"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3.5 8.5 8.5 3.5M4.75 3.5h3.75v3.75"></path>
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <div class="docs__body">
+        <nav class="docs__toc" aria-labelledby="docs-toc-title">
+          <p class="label docs__toc-title" id="docs-toc-title">On this page</p>
+          <ol class="docs__toc-list">
+            {
+              toc.map((item) => (
+                <li>
+                  <a class="docs__toc-link" href={`#${item.id}`} data-toc-link={item.id}>
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+
+        <div class="docs__main">
+          <article class="prose docs__article">
+            <slot />
+          </article>
+
+          {
+            (prev || next) && (
+              <nav class="docs__pager" aria-label="Documentation pages">
+                {prev ? (
+                  <a class="docs__pager-link docs__pager-link--prev" href={prev.href} rel="prev">
+                    <span class="docs__pager-label">← Previous</span>
+                    <span class="docs__pager-title">{prev.title}</span>
+                  </a>
+                ) : (
+                  <span />
+                )}
+                {next ? (
+                  <a class="docs__pager-link docs__pager-link--next" href={next.href} rel="next">
+                    <span class="docs__pager-label">Next →</span>
+                    <span class="docs__pager-title">{next.title}</span>
+                  </a>
+                ) : (
+                  <span />
+                )}
+              </nav>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Scroll-spy for the "On this page" list. IntersectionObserver decides *when*
+  // to recompute; the reading line decides *what* is current, so a heading that
+  // leaves the band never leaves the sidebar without a highlight.
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+  const targets = links
+    .map((link) => document.getElementById(link.dataset.tocLink ?? ''))
+    .filter((el): el is HTMLElement => Boolean(el));
+
+  if (links.length && targets.length) {
+    const LINE = 140;
+
+    const setActive = (id: string) => {
+      for (const link of links) {
+        const on = link.dataset.tocLink === id;
+        link.classList.toggle('is-active', on);
+        if (on) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+    };
+
+    const pick = () => {
+      let current = targets[0].id;
+      for (const target of targets) {
+        if (target.getBoundingClientRect().top <= LINE) current = target.id;
+      }
+      setActive(current);
+    };
+
+    pick();
+    window.addEventListener('hashchange', pick);
+
+    // The observer is the trigger: it fires whenever a section crosses the
+    // reading line. The scroll tick is the safety net, so the highlight can
+    // never be stale when a jump lands between two headings.
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(() => pick(), {
+        rootMargin: `-${LINE}px 0px -45% 0px`,
+        threshold: [0, 0.2, 1],
+      });
+      targets.forEach((target) => io.observe(target));
+    }
+
+    let ticking = false;
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          pick();
+        });
+      },
+      { passive: true },
+    );
+  }
+</script>
+
+<style>
+  .docs {
+    padding-top: clamp(26px, 3.4vw, 48px);
+    padding-bottom: clamp(56px, 7vw, 104px);
+  }
+
+  /* ── header ─────────────────────────────────────────────────────────── */
+
+  .docs__head {
+    display: grid;
+    gap: 16px;
+    padding-bottom: clamp(22px, 3vw, 34px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .docs__kicker {
+    color: var(--accent);
+  }
+
+  .docs__head-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .docs__head-text {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .docs__title {
+    margin: 0;
+  }
+
+  .docs__lede {
+    max-width: 54ch;
+  }
+
+  .docs__edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex: none;
+    margin-top: 6px;
+    padding: 5px 9px;
+    margin-right: -9px;
+    border-radius: var(--kc-radius-sm);
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    transition:
+      color var(--dur) var(--ease),
+      background var(--dur) var(--ease);
+  }
+
+  .docs__edit:hover {
+    color: var(--text);
+    background: rgb(234 233 229 / 0.06);
+  }
+
+  .docs__edit svg {
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .docs__edit:hover svg {
+    transform: translate(1px, -1px);
+  }
+
+  /* ── body: sidebar + article ────────────────────────────────────────── */
+
+  .docs__body {
+    display: grid;
+    gap: clamp(26px, 3.4vw, 40px);
+    padding-top: clamp(24px, 3vw, 40px);
+  }
+
+  .docs__toc {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .docs__toc-title {
+    font-size: var(--fs-micro);
+  }
+
+  .docs__toc-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .docs__toc-link {
+    display: block;
+    padding-block: 3px;
+    font-family: var(--kc-font-mono);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    color: var(--text-3);
+    border-bottom: 1px solid transparent;
+    transition:
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .docs__toc-link:hover {
+    color: var(--text-2);
+  }
+
+  .docs__toc-link.is-active {
+    color: var(--accent);
+    border-bottom-color: var(--line-gold);
+  }
+
+  .docs__main {
+    min-width: 0;
+  }
+
+  .docs__article {
+    max-width: 70ch;
+  }
+
+  /* base.css pads scroll targets for the sticky nav; the article's headings
+     don't need the extra scroll-margin on top of it. */
+  .docs__article :global(h2),
+  .docs__article :global(h3) {
+    scroll-margin-top: 8px;
+  }
+
+  /* the article opens on an h2; it should not add a section gap above itself */
+  .docs__article :global(h2:first-child) {
+    margin-top: 0;
+  }
+
+  /* a code block that scrolls 3px is worse than 13px mono */
+  @media (max-width: 520px) {
+    .docs__article :global(pre) {
+      font-size: 0.8125rem;
+    }
+  }
+
+  /* ── pager ──────────────────────────────────────────────────────────── */
+
+  .docs__pager {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 70ch;
+    margin-top: clamp(48px, 6vw, 80px);
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+  }
+
+  .docs__pager-link {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    color: var(--text-2);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .docs__pager-link--next {
+    text-align: right;
+    justify-items: end;
+  }
+
+  .docs__pager-label {
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .docs__pager-title {
+    font-size: var(--fs-small);
+    letter-spacing: -0.01em;
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--dur) var(--ease);
+  }
+
+  .docs__pager-link:hover {
+    color: var(--text);
+  }
+
+  .docs__pager-link:hover .docs__pager-label {
+    color: var(--accent);
+  }
+
+  .docs__pager-link:hover .docs__pager-title {
+    border-bottom-color: var(--line-strong);
+  }
+
+  /* ── wide: two columns, sticky TOC ──────────────────────────────────── */
+
+  @media (min-width: 980px) {
+    .docs__body {
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: clamp(36px, 4vw, 64px);
+      padding-top: clamp(32px, 3.4vw, 48px);
+    }
+
+    .docs__toc {
+      position: sticky;
+      top: 96px;
+      align-self: start;
+      height: max-content;
+      gap: 12px;
+    }
+
+    .docs__toc-list {
+      display: grid;
+      gap: 1px;
+      padding-bottom: 0;
+      border-bottom: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .docs__toc-link {
+      padding: 5px 0 5px 13px;
+      margin-left: -1px;
+      border-bottom: 0;
+      border-left: 1px solid transparent;
+    }
+
+    .docs__toc-link.is-active {
+      border-bottom-color: transparent;
+      border-left-color: var(--accent);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .docs__head-row {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .docs__edit {
+      margin-top: 0;
+      margin-left: -9px;
+      order: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .docs__toc-link,
+    .docs__edit,
+    .docs__edit svg {
+      transition: none;
+    }
+  }
+</style>

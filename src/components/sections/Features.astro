@@ -1,0 +1,228 @@
+---
+/**
+ * 01 — What it does.
+ * Six cards, six bespoke line drawings. In every drawing the gold stroke is the
+ * one thing that carries the idea; the rest is a hairline. No icon library.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+
+// SVG children are styled through inline styles so the drawings survive any
+// scoping; the accent colour is inherited, so hover can brighten it from the card.
+const line =
+  'fill:none;stroke:var(--line-strong);stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round';
+const gold =
+  'fill:none;stroke:var(--diagram-accent,var(--accent));stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round';
+---
+
+<section class="section section--divided" id="what-it-does" aria-labelledby="what-it-does-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="01"
+        kicker="What it does"
+        title="It reads the repo, runs the command, and keeps going."
+        lede="Six things that decide whether an agent is useful at hour six as well as hour one."
+        id="what-it-does-head"
+      />
+    </div>
+
+    <div class="feats">
+      <article class="feat">
+        <div class="feat__top">
+          <svg class="feat__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <g style={line}>
+              <path d="M2 16h28"></path>
+              <path d="M9 11v10M17 11v10"></path>
+            </g>
+            <g style={gold}>
+              <path d="M17 16h10"></path>
+              <path d="m23.4 12.5 3.7 3.5-3.7 3.5"></path>
+            </g>
+          </svg>
+          <span class="feat__num">01</span>
+        </div>
+        <h3 class="h3">Long-horizon runs</h3>
+        <p class="feat__body">
+          The iteration budget is per segment. When it runs out mid-task it refreshes and the run
+          continues — up to <span class="mono">~10,200 turns</span> or <span class="mono">24 h</span>.
+        </p>
+      </article>
+
+      <article class="feat">
+        <div class="feat__top">
+          <svg class="feat__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <g style={line}>
+              <rect x="3" y="6" width="26" height="20" rx="3"></rect>
+              <path d="M3 11h26"></path>
+              <path d="M15 22h9"></path>
+            </g>
+            <g style={gold}>
+              <path d="m8 15.5 3.2 3.2L8 21.9"></path>
+            </g>
+          </svg>
+          <span class="feat__num">02</span>
+        </div>
+        <h3 class="h3">Real tools, real side effects</h3>
+        <p class="feat__body">
+          Read, search, edit; shell with streamed output in its own process group; git; subagents.
+          Every result is bounded, with a truncation marker.
+        </p>
+      </article>
+
+      <article class="feat">
+        <div class="feat__top">
+          <svg class="feat__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <g style={line}>
+              <path d="M2 16h8M22 16h8"></path>
+              <path d="M10 8v16M22 8v16"></path>
+            </g>
+            <g style={gold}>
+              <path d="m13 16.2 2.7 2.6 5.1-6"></path>
+            </g>
+          </svg>
+          <span class="feat__num">03</span>
+        </div>
+        <h3 class="h3">Approvals before mutations</h3>
+        <p class="feat__body">
+          <code>ask</code> is the default for shell and writes. Command-prefix allowlists, per-path
+          auto-approval, allow-once / session / deny — all audited.
+        </p>
+      </article>
+
+      <article class="feat">
+        <div class="feat__top">
+          <svg class="feat__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <g style={gold}>
+              <rect x="4" y="4" width="24" height="24" rx="3"></rect>
+            </g>
+            <g style={line}>
+              <path d="M12 11h5l3.5 3.5V22H12z"></path>
+              <path d="M17 11v3.5h3.5"></path>
+            </g>
+          </svg>
+          <span class="feat__num">04</span>
+        </div>
+        <h3 class="h3">Contained file tools</h3>
+        <p class="feat__body">
+          Every path resolves through a confined workspace — no <code>..</code>, no absolute paths
+          outside, symlink escapes refused. Writes are atomic.
+        </p>
+      </article>
+
+      <article class="feat">
+        <div class="feat__top">
+          <svg class="feat__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <g style={line}>
+              <path d="M2 20h7M23 20h7"></path>
+              <circle cx="9" cy="20" r="1.3"></circle>
+              <circle cx="23" cy="20" r="1.3"></circle>
+            </g>
+            <g style={gold}>
+              <path d="M9 20C9 9.5 23 9.5 23 20"></path>
+            </g>
+          </svg>
+          <span class="feat__num">05</span>
+        </div>
+        <h3 class="h3">Crash-tolerant</h3>
+        <p class="feat__body">
+          Cancelling aborts the provider stream and kills shell process groups. On restart, runs
+          become <code>interrupted</code> and approvals <code>expired</code>; nothing is retried.
+        </p>
+      </article>
+
+      <article class="feat">
+        <div class="feat__top">
+          <svg class="feat__ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <g style={line}>
+              <path d="M2 9h10M2 16h7M2 23h10"></path>
+              <path d="M20 6h6l4 4v17h-10z"></path>
+              <path d="M26 6v4h4"></path>
+              <path d="M23 16h4M23 20h4"></path>
+            </g>
+            <g style={gold}>
+              <path d="M14 16h4"></path>
+              <path d="m15.8 13.4 2.6 2.6-2.6 2.6"></path>
+            </g>
+          </svg>
+          <span class="feat__num">06</span>
+        </div>
+        <h3 class="h3">Self-documenting</h3>
+        <p class="feat__body">
+          Facts are <code>@kc-doc</code> comments beside the code they describe, compiled into the
+          binary — the model reads them with <code>karucode_docs</code>.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .feats {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(14px, 1.5vw, 20px);
+  }
+
+  @media (min-width: 680px) {
+    .feats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .feats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .feat {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: clamp(20px, 2.2vw, 26px);
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius);
+    background: var(--bg-raised);
+    transition: border-color 200ms var(--ease);
+  }
+
+  .feat:hover {
+    border-color: var(--line-strong);
+    --diagram-accent: var(--accent-hi);
+  }
+
+  .feat__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 2px;
+  }
+
+  .feat__ico {
+    width: 30px;
+    height: 30px;
+    flex: none;
+  }
+
+  .feat__num {
+    font-family: var(--kc-font-mono);
+    font-size: var(--fs-label);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-3);
+  }
+
+  .feat h3 {
+    margin: 0;
+    color: var(--text);
+    text-wrap: balance;
+  }
+
+  .feat__body {
+    font-size: var(--fs-small);
+    line-height: 1.62;
+    color: var(--text-2);
+    text-wrap: pretty;
+  }
+</style>

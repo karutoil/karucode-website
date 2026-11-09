@@ -1,0 +1,51 @@
+---
+/**
+ * The decorative layer behind the hero: a field of monospace glyphs with a prompt
+ * cursor drifting through it. Two stacked canvases — the field is painted once per
+ * size change, only the cursor layer repaints — so a frame is one clear plus a
+ * glow blit and ~40 glyphs.
+ *
+ * Everything here is aria-hidden and pointer-events: none. The script lives in
+ * cursor-field.ts and is bundled by Astro; there is no library.
+ */
+---
+<div class="kcf" data-kcf aria-hidden="true">
+  <canvas class="kcf__field" data-kcf-field></canvas>
+  <canvas class="kcf__cursor" data-kcf-cursor></canvas>
+</div>
+
+<script>
+  import { mountCursorField } from './cursor-field.ts';
+
+  const root = document.querySelector<HTMLElement>('[data-kcf]');
+  if (root) mountCursorField(root);
+</script>
+
+<style>
+  .kcf {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .kcf canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* The field thins out under the text block and loses its hard cut at the top
+     and bottom of the hero. Masks are alpha only — no colour is involved, so the
+     tokens still own every visible hue. */
+  .kcf__field {
+    color: var(--text);
+    mask-image:
+      linear-gradient(180deg, transparent 0, black 9%, black 87%, transparent 100%),
+      linear-gradient(100deg, color-mix(in srgb, currentColor 28%, transparent), currentColor 62%);
+    mask-composite: intersect;
+  }
+</style>

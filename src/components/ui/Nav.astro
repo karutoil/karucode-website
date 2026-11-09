@@ -1,0 +1,278 @@
+---
+import { NAV, SITE } from '../../site';
+---
+
+<header class="nav" id="site-nav" data-nav>
+  <div class="nav__inner wrap wrap--wide">
+    <a class="nav__brand" href="/" aria-label="karucode — home">
+      <img class="nav__mark" src="/brand/mark.svg" alt="" width="24" height="24" aria-hidden="true" />
+      <span class="nav__word">karu<span>code</span></span>
+    </a>
+
+    <nav class="nav__links" aria-label="Primary">
+      {
+        NAV.map((item) => (
+          <a class="nav__link" href={item.href}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="nav__actions">
+      <a
+        class="nav__gh"
+        href={SITE.repo}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="karucode on GitHub (opens in a new tab)"
+      >
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
+          <path
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+          ></path>
+        </svg>
+      </a>
+      <a class="btn btn--primary nav__cta" href="/docs/quickstart/">Install</a>
+      <button class="nav__burger" type="button" aria-expanded="false" aria-controls="nav-drawer" data-nav-toggle>
+        <span class="vh">Menu</span>
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+          <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="nav__drawer" id="nav-drawer" data-nav-drawer hidden>
+    <nav aria-label="Mobile">
+      {
+        NAV.map((item) => (
+          <a class="nav__drawer-link" href={item.href}>
+            {item.label}
+          </a>
+        ))
+      }
+      <a class="nav__drawer-link" href="/docs/quickstart/">Install</a>
+      <a class="nav__drawer-link nav__drawer-link--ext" href={SITE.repo} target="_blank" rel="noopener noreferrer">
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('[data-nav]');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
+  const drawer = document.querySelector<HTMLElement>('[data-nav-drawer]');
+
+  if (nav) {
+    const onScroll = () => nav.classList.toggle('is-stuck', window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  if (toggle && drawer) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      drawer.hidden = !open;
+      document.documentElement.classList.toggle('nav-open', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+    };
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    drawer.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) setOpen(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+    window.matchMedia('(min-width: 861px)').addEventListener('change', (e) => {
+      if (e.matches) setOpen(false);
+    });
+  }
+</script>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    border-bottom: 1px solid transparent;
+  }
+
+  .nav.is-stuck {
+    background: rgb(17 18 19 / 0.78);
+    backdrop-filter: saturate(140%) blur(14px);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
+    border-bottom-color: var(--line-soft);
+  }
+
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    height: 68px;
+  }
+
+  .nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: auto;
+  }
+
+  .nav__mark {
+    width: 22px;
+    height: 22px;
+    transition: transform 420ms var(--ease);
+  }
+
+  .nav__brand:hover .nav__mark {
+    transform: translateX(1px);
+  }
+
+  .nav__word {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--text);
+  }
+
+  .nav__word span {
+    color: var(--accent);
+  }
+
+  .nav__links {
+    display: flex;
+    align-items: center;
+    gap: clamp(16px, 2.2vw, 30px);
+  }
+
+  .nav__link {
+    font-family: var(--kc-font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease);
+    position: relative;
+    padding-block: 6px;
+  }
+
+  .nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .nav__link:hover {
+    color: var(--text);
+  }
+
+  .nav__link:hover::after {
+    transform: scaleX(1);
+  }
+
+  .nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav__gh {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--kc-radius-sm);
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  .nav__gh:hover {
+    color: var(--text);
+    background: rgb(234 233 229 / 0.06);
+  }
+
+  .nav__cta {
+    height: 36px;
+    padding-inline: 15px;
+    font-size: 0.8125rem;
+  }
+
+  .nav__burger {
+    display: none;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: var(--kc-radius-sm);
+    color: var(--text-2);
+    border: 1px solid var(--line);
+  }
+
+  .nav__drawer {
+    display: none;
+  }
+
+  @media (max-width: 860px) {
+    .nav__links,
+    .nav__cta {
+      display: none;
+    }
+
+    .nav__burger {
+      display: grid;
+    }
+
+    .nav__inner {
+      height: 60px;
+    }
+
+    .nav__drawer {
+      display: block;
+      border-top: 1px solid var(--line-soft);
+      background: var(--kc-ink-950);
+      padding: 8px var(--gutter) 24px;
+      position: fixed;
+      inset: 60px 0 auto 0;
+      /* Fill the rest of the screen: a menu that only covers its own links lets
+         the article show through underneath and reads as a rendering bug. */
+      min-height: calc(100dvh - 60px);
+      max-height: calc(100dvh - 60px);
+      overflow-y: auto;
+    }
+
+    .nav__drawer[hidden] {
+      display: none;
+    }
+
+    .nav__drawer-link {
+      display: block;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 1.125rem;
+      color: var(--text-2);
+    }
+
+    .nav__drawer-link:hover {
+      color: var(--text);
+    }
+
+    .nav__drawer-link--ext {
+      color: var(--accent);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav {
+      transition: none;
+    }
+  }
+</style>

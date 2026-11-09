@@ -1,0 +1,405 @@
+---
+/**
+ * 06 — Install.
+ * A real tablist: three ways in, every command one that exists. All panels are
+ * rendered in the HTML; JS only hides the inactive ones, so the panel still
+ * reads with JS off.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+import Cmd from '../ui/Cmd.astro';
+
+const TABS = [
+  { id: 'source', label: 'Source' },
+  { id: 'container', label: 'Container' },
+  { id: 'systemd', label: 'systemd' },
+];
+
+const NOTES = [
+  {
+    label: 'Bind',
+    body: 'A non-loopback bind is refused without KARUCODE_AUTH_TOKEN (16+ characters).',
+  },
+  {
+    label: 'TLS',
+    body: 'There is no TLS in the binary. Put it behind a reverse proxy or an SSH tunnel.',
+  },
+  {
+    label: 'Optional',
+    body: 'ripgrep — a pure-Rust fallback is built in — and git.',
+  },
+];
+---
+
+<section class="section section--divided" id="install" aria-labelledby="install-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="06"
+        kicker="Install"
+        title="From clone to a running session in two commands."
+        lede="Linux. Rust 1.89+ for the server, Node 22.12+ only to build the frontend. No cloud account, no signup."
+        id="install-head"
+      />
+    </div>
+
+    <div class="tabs" data-tabs>
+      <div class="tabs__list" role="tablist" aria-label="Install method">
+        {
+          TABS.map((t, i) => (
+            <button
+              class="tabs__tab mono"
+              type="button"
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-controls={`panel-${t.id}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+            >
+              {t.label}
+            </button>
+          ))
+        }
+      </div>
+
+      <div class="tabs__panels">
+        <div
+          class="tpanel"
+          role="tabpanel"
+          id="panel-source"
+          aria-labelledby="tab-source"
+          tabindex="0"
+        >
+          <ol class="steps">
+            <li class="step">
+              <span class="step__num mono">01</span>
+              <div class="step__body">
+                <p class="step__note">Clone it, then point it at your project and your gateway.</p>
+                <Cmd
+                  label="shell"
+                  wrap
+                  command="git clone https://github.com/karutoil/karucode && cd karucode"
+                />
+              </div>
+            </li>
+            <li class="step">
+              <span class="step__num mono">02</span>
+              <div class="step__body">
+                <p class="step__note">
+                  Set <span class="mono">KARUCODE_BASE_URL</span>,
+                  <span class="mono">KARUCODE_API_KEY</span> and
+                  <span class="mono">KARUCODE_MODEL</span> first, then run the server.
+                </p>
+                <Cmd
+                  label="shell"
+                  wrap
+                  command="cargo run --release -p kc-server -- --workspace /path/to/your/project"
+                />
+              </div>
+            </li>
+          </ol>
+          <p class="tpanel__foot">
+            <span class="mono">cargo build</span> also builds and embeds the frontend, so that is the
+            whole build. Then open <span class="mono">http://127.0.0.1:8787</span>.
+          </p>
+        </div>
+
+        <div
+          class="tpanel"
+          role="tabpanel"
+          id="panel-container"
+          aria-labelledby="tab-container"
+          tabindex="0"
+        >
+          <ol class="steps">
+            <li class="step">
+              <span class="step__num mono">01</span>
+              <div class="step__body">
+                <p class="step__note">Build the image from the repository root.</p>
+                <Cmd label="shell" wrap command="docker build -t karucode ." />
+              </div>
+            </li>
+            <li class="step">
+              <span class="step__num mono">02</span>
+              <div class="step__body">
+                <p class="step__note">
+                  Run it with tokens, a data volume and your project mounted at
+                  <span class="mono">/workspace</span>.
+                </p>
+                <Cmd
+                  label="shell"
+                  wrap
+                  command="docker run -d --name karucode -p 8787:8787 -e KARUCODE_AUTH_TOKEN=... -e KARUCODE_ADMIN_TOKEN=... -v karucode-data:/data -v /path/to/project:/workspace karucode"
+                />
+              </div>
+            </li>
+          </ol>
+          <p class="tpanel__foot">
+            The container is the isolation boundary — the shell inside it is still not sandboxed by
+            karucode itself.
+          </p>
+        </div>
+
+        <div
+          class="tpanel"
+          role="tabpanel"
+          id="panel-systemd"
+          aria-labelledby="tab-systemd"
+          tabindex="0"
+        >
+          <ol class="steps">
+            <li class="step">
+              <span class="step__num mono">01</span>
+              <div class="step__body">
+                <p class="step__note">The installer takes the workspace the service may touch.</p>
+                <Cmd
+                  label="shell"
+                  wrap
+                  command="sudo ./packaging/install.sh --workspace /srv/karucode/workspace"
+                />
+              </div>
+            </li>
+          </ol>
+          <p class="tpanel__foot">
+            It downloads the release tarball, checks it against
+            <span class="mono">SHA256SUMS</span> and only then unpacks it. Nothing is piped from the
+            network into a shell.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <ul class="inotes">
+      {
+        NOTES.map((n) => (
+          <li class="inote">
+            <span class="inote__label mono">{n.label}</span>
+            <span class="inote__body">{n.body}</span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="cta">
+      <a class="btn btn--primary btn--lg" href="/docs/quickstart/">
+        Read the quick start
+        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" fill="none">
+          <path
+            d="M2.5 6h7M6.6 3 9.6 6l-3 3"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+      </a>
+      <span class="cta__note mono">MIT licensed · the systemd installer checks its tarball against SHA256SUMS</span>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-tabs]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+    if (!tabs.length || !panels.length) return;
+
+    const show = (index: number, focus: boolean) => {
+      tabs.forEach((tab, i) => {
+        const on = i === index;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach((panel, i) => {
+        panel.hidden = i !== index;
+      });
+      if (focus) tabs[index]?.focus({ preventScroll: true });
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => show(i, false));
+      tab.addEventListener('keydown', (e) => {
+        const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+        if (!keys.includes(e.key)) return;
+        e.preventDefault();
+        let next = i;
+        if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+        if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+        if (e.key === 'Home') next = 0;
+        if (e.key === 'End') next = tabs.length - 1;
+        show(next, true);
+      });
+    });
+
+    show(0, false);
+  });
+</script>
+
+<style>
+  .tabs {
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius);
+    background: var(--bg-raised);
+    overflow: hidden;
+  }
+
+  .tabs__list {
+    display: flex;
+    gap: 2px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tabs__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs__tab {
+    position: relative;
+    padding: 13px 14px 12px;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    white-space: nowrap;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .tabs__tab:hover {
+    color: var(--text);
+  }
+
+  .tabs__tab[aria-selected='true'] {
+    color: var(--accent);
+  }
+
+  .tabs__tab[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .tabs__panels {
+    padding: clamp(18px, 2.4vw, 28px);
+  }
+
+  .tpanel {
+    display: grid;
+    gap: 16px;
+  }
+
+  .tpanel[hidden] {
+    display: none;
+  }
+
+  .steps {
+    display: grid;
+    gap: 18px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  @media (max-width: 560px) {
+    .step {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .step__num {
+      display: none;
+    }
+  }
+
+  .step__num {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    padding-top: 14px;
+  }
+
+  .step__body {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .step__note {
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+    max-width: 62ch;
+  }
+
+  .tpanel__foot {
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-3);
+    max-width: 68ch;
+  }
+
+  .tpanel__foot .mono {
+    color: var(--text-2);
+  }
+
+  /* ── notes under the panel ─────────────────────────────────────────── */
+  .inotes {
+    display: grid;
+    gap: 0;
+    margin-top: clamp(18px, 2.2vw, 26px);
+    border-top: 1px solid var(--line-soft);
+  }
+
+  @media (min-width: 760px) {
+    .inotes {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: clamp(20px, 3vw, 40px);
+    }
+  }
+
+  .inote {
+    display: grid;
+    gap: 4px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .inote__label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .inote__body {
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--text-2);
+  }
+
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 22px;
+    margin-top: clamp(24px, 3vw, 36px);
+  }
+
+  .cta__note {
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+</style>

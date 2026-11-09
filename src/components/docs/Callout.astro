@@ -1,0 +1,88 @@
+---
+/**
+ * A quiet panel for the things a page needs you to actually read: a warning
+ * about a trust boundary, or a note that changes how a command behaves.
+ * The colour lives in the 2px marker only — the surface stays neutral.
+ */
+interface Props {
+  kind?: 'note' | 'danger';
+  title: string;
+}
+
+const { kind = 'note', title } = Astro.props;
+---
+
+<div class:list={['callout', `callout--${kind}`]}>
+  <p class="callout__label">
+    <span class="callout__mark" aria-hidden="true"></span>
+    {title}
+  </p>
+  <div class="callout__body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .callout {
+    border: 1px solid var(--line);
+    border-left-width: 2px;
+    border-left-color: var(--line-strong);
+    border-radius: var(--kc-radius-sm);
+    background: var(--bg-raised);
+    padding: 16px 20px 18px;
+  }
+
+  .callout--danger {
+    border-left-color: var(--danger);
+  }
+
+  .callout--note {
+    border-left-color: var(--accent);
+  }
+
+  .callout__label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--kc-font-mono);
+    font-size: var(--fs-micro);
+    line-height: 1.4;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .callout__mark {
+    width: 6px;
+    height: 6px;
+    flex: none;
+    background: var(--line-strong);
+  }
+
+  .callout--danger .callout__mark {
+    background: var(--danger);
+  }
+
+  .callout--note .callout__mark {
+    background: var(--accent);
+  }
+
+  .callout__body {
+    margin-top: 10px;
+    font-size: var(--fs-small);
+    line-height: 1.65;
+    color: var(--text-2);
+  }
+
+  .callout__body :global(strong) {
+    color: var(--text);
+  }
+
+  .callout__body :global(p + p) {
+    margin-top: 0.7em;
+  }
+
+  .callout__body :global(code) {
+    font-size: 0.85em;
+  }
+</style>

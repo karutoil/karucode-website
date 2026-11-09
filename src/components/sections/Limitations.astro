@@ -1,0 +1,143 @@
+---
+/**
+ * 05 — What it doesn't do.
+ * A ledger, not cards: nine rows, hairline rules, label above the consequence.
+ * Closed by the one sentence that matters.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+
+/** Trusted literals only: turns `backticked` words into <code>. */
+const md = (s: string) => s.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+const LIMITS = [
+  {
+    label: 'No shell sandbox',
+    body: 'Commands run as the server user. Use a container or VM for untrusted code or unattended `auto` mode.',
+  },
+  {
+    label: 'Shared workspace',
+    body: 'Subagents see the parent’s live workspace, dirty and untracked files included. `owned_paths` is advisory, not a lock.',
+  },
+  {
+    label: 'Sequential tools',
+    body: 'Tool calls within a turn run one at a time — deliberate, for deterministic approvals and events.',
+  },
+  {
+    label: 'MCP is tools only',
+    body: '`stdio` and streamable HTTP. No legacy SSE transport, and no resources or prompts are surfaced.',
+  },
+  {
+    label: 'Plugins are processes',
+    body: 'Not Wasm: no filesystem sandbox around a plugin, and no hot reload of a changed binary.',
+  },
+  {
+    label: 'Install-wide providers',
+    body: 'Provider profiles are not per project. A session can still pin its own provider, model and effort.',
+  },
+  {
+    label: 'No built-in TLS',
+    body: 'Put a reverse proxy in front for remote access, or reach it over an SSH tunnel.',
+  },
+  {
+    label: 'Trimming, not summarising',
+    body: 'Compaction trims the oldest context. It is not model-assisted summarisation.',
+  },
+  {
+    label: 'Provider-reported tokens',
+    body: 'Token counts are whatever your provider reports. Absent usage is shown as unknown.',
+  },
+];
+---
+
+<section class="section section--divided" id="limitations" aria-labelledby="limitations-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="05"
+        kicker="What it doesn’t do"
+        title="The list a vendor usually leaves out."
+        lede="You should know these before you run it, not after."
+        id="limitations-head"
+      />
+    </div>
+
+    <ul class="limits">
+      {
+        LIMITS.map((l) => (
+          <li class="limit">
+            <span class="limit__mark mono" aria-hidden="true">
+              —
+            </span>
+            <h3 class="limit__label">{l.label}</h3>
+            <p class="limit__body" set:html={md(l.body)} />
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="limits__close">
+      The shell is not sandboxed. Approvals are the gate, not isolation — use a container or VM for
+      untrusted code.
+    </p>
+  </div>
+</section>
+
+<style>
+  .limits {
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (min-width: 760px) {
+    .limits {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: clamp(28px, 5vw, 72px);
+    }
+  }
+
+  .limit {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 3px 10px;
+    align-content: start;
+    padding: 15px 0 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .limit__mark {
+    font-size: 0.75rem;
+    color: var(--text-3);
+    line-height: 1.55;
+  }
+
+  .limit__label {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    letter-spacing: -0.012em;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .limit__body {
+    grid-column: 2;
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+    max-width: 46ch;
+  }
+
+  .limit__body :global(code) {
+    font-size: 0.8125rem;
+  }
+
+  .limits__close {
+    margin-top: clamp(26px, 3vw, 36px);
+    max-width: 60ch;
+    font-size: var(--fs-lede);
+    line-height: 1.45;
+    letter-spacing: -0.015em;
+    color: var(--accent);
+    text-wrap: pretty;
+  }
+</style>

@@ -1,0 +1,302 @@
+---
+/**
+ * 04 — Performance.
+ * A stat band, not a card grid: the numbers are the argument, so they get the
+ * type. One small honest chart of the two cold-start samples, and the caveat
+ * always visible underneath. Never a comparison.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+
+const STATS = [
+  { value: '7.9', unit: 'ms', label: 'Cold start', note: 'average of 10.1 / 5.7' },
+  { value: '10.2', unit: 'MiB', label: 'Idle RSS', note: 'sampled after 3 s idle' },
+  { value: '12.4', unit: 'MiB', label: 'Peak RSS', note: 'with 3 concurrent runs' },
+  { value: '10.5', unit: 'MiB', label: 'Binary', note: 'strip + thin LTO' },
+  { value: '158.9', unit: 'ms', label: '3 runs, wall', note: 'three concurrent runs' },
+];
+
+// two cold-start samples: 10.1 ms and 5.7 ms, average 7.9 ms
+const RUNS = [
+  { label: 'run 1', ms: 10.1 },
+  { label: 'run 2', ms: 5.7 },
+];
+const MAX = Math.max(...RUNS.map((r) => r.ms));
+const AVG = 7.9;
+---
+
+<section class="section section--divided" id="performance" aria-labelledby="performance-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="04"
+        kicker="Performance"
+        title="Ten megabytes of binary, twelve megabytes of RSS."
+        lede="Measured on one host with a local mock provider — cold start polled on /api/health, RSS sampled after three seconds idle and during three concurrent runs."
+        id="performance-head"
+      />
+    </div>
+
+    <p class="band__cap mono">measured, not promised · one host · mock provider</p>
+
+    <ul class="stats">
+      {
+        STATS.map((s) => (
+          <li class="stat">
+            <span class="stat__label mono">{s.label}</span>
+            <span class="stat__value">
+              <span class="stat__num">{s.value}</span>
+              <span class="stat__unit">{s.unit}</span>
+            </span>
+            <span class="stat__note mono">{s.note}</span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="perf__foot">
+      <figure class="chart">
+        <figcaption class="chart__cap mono">Cold start — two runs, polled on <span>/api/health</span></figcaption>
+        <div class="chart__plot">
+          <div class="chart__rows">
+            {
+              RUNS.map((r) => (
+                <div class="chart__row">
+                  <span class="chart__label mono">{r.label}</span>
+                  <span class="chart__track">
+                    <span class="chart__bar" style={`--w:${((r.ms / MAX) * 100).toFixed(1)}%`} />
+                  </span>
+                  <span class="chart__val mono">{r.ms.toFixed(1)}</span>
+                </div>
+              ))
+            }
+          </div>
+          <span class="chart__avg" aria-hidden="true" />
+        </div>
+        <div class="chart__axis mono" aria-hidden="true">
+          <span>0</span>
+          <span>{MAX.toFixed(1)} ms</span>
+        </div>
+        <span class="chart__avgkey mono">avg {AVG.toFixed(1)} ms</span>
+      </figure>
+
+      <p class="caveat mono">
+        Host: AMD Ryzen 7 3700X, Linux 6.12, rustc 1.96, release build with strip + thin LTO.
+        Numbers are specific to this host and to the mock provider; RSS during a real run also
+        depends on the provider TLS stack and response sizes. No memory target is promised.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .band__cap {
+    display: block;
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 360px) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 860px) {
+    .stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .stats {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  .stat {
+    display: grid;
+    gap: 4px;
+    padding: 20px 20px 22px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  @media (min-width: 1080px) {
+    .stat {
+      padding-left: 22px;
+      border-bottom: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .stat:first-child {
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
+
+  .stat__label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .stat__value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4ch;
+    font-family: var(--kc-font-mono);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+
+  .stat__num {
+    font-size: clamp(1.9rem, 3vw, 2.6rem);
+    font-weight: 400;
+  }
+
+  .stat__unit {
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    color: var(--text-3);
+  }
+
+  .stat__note {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-3);
+  }
+
+  /* ── foot: chart + caveat ──────────────────────────────────────────── */
+  .perf__foot {
+    display: grid;
+    gap: clamp(20px, 3vw, 36px);
+    margin-top: clamp(28px, 3.5vw, 44px);
+    padding-top: clamp(20px, 2.5vw, 28px);
+    border-top: 1px solid var(--line);
+  }
+
+  @media (min-width: 900px) {
+    .perf__foot {
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      gap: clamp(32px, 5vw, 72px);
+      align-items: start;
+    }
+  }
+
+  .chart {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+  }
+
+  .chart__cap {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .chart__cap span {
+    color: var(--text-2);
+    text-transform: none;
+  }
+
+  .chart__plot {
+    position: relative;
+  }
+
+  .chart__rows {
+    display: grid;
+    gap: 10px;
+  }
+
+  .chart__row {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 62px;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .chart__label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .chart__track {
+    display: block;
+    height: 6px;
+    background: var(--line-soft);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .chart__bar {
+    display: block;
+    height: 100%;
+    width: var(--w, 0%);
+    background: var(--text-2);
+    border-radius: 2px;
+  }
+
+  .chart__val {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    text-align: right;
+  }
+
+  /* the average, marked — the one gold thing in the section */
+  .chart__avg {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: calc(44px + 10px + (100% - 126px) * 0.782);
+    width: 1px;
+    border-left: 1px dashed var(--accent);
+    pointer-events: none;
+  }
+
+  .chart__axis {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 62px;
+    gap: 10px;
+    font-size: 0.6875rem;
+    color: var(--text-3);
+  }
+
+  .chart__axis span:first-child {
+    grid-column: 2;
+  }
+
+  .chart__axis span:last-child {
+    text-align: right;
+  }
+
+  .chart__avgkey {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .caveat {
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    letter-spacing: -0.01em;
+    color: var(--text-3);
+    max-width: 64ch;
+  }
+</style>

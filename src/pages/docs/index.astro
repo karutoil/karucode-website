@@ -1,0 +1,229 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import StartHere from '../../components/docs/StartHere.astro';
+import { SITE } from '../../site';
+
+const TOC = [
+  { id: 'what-it-does', label: 'What it does' },
+  { id: 'start-here', label: 'Start here' },
+  { id: 'how-it-is-put-together', label: 'How it is put together' },
+  { id: 'what-it-refuses-to-do', label: 'What it refuses to do' },
+  { id: 'requirements', label: 'Requirements' },
+];
+
+const START = [
+  {
+    meta: '01',
+    href: '/docs/quickstart/',
+    title: 'Quick start',
+    note: 'Nothing installed yet. Clone the repo, point it at a model, run your first task.',
+  },
+  {
+    meta: '02',
+    href: '/docs/configuration/',
+    title: 'Configuration',
+    note: 'It runs and you want to change how. Environment variables, TOML, plugins, MCP, approvals.',
+  },
+  {
+    meta: '03',
+    href: '/security/',
+    title: 'Security',
+    note: 'You are about to bind it to an interface or leave it unattended. Read this before you do.',
+  },
+];
+---
+
+<Docs
+  title="karucode"
+  headTitle="Docs"
+  description="Documentation for karucode: what it does, how it is put together, what it refuses to do, and what it needs to run."
+  path="/docs/"
+  section="Docs"
+  lede="One binary, not a stack: 10.5 MiB of Rust, one SQLite file for state, any OpenAI-compatible endpoint, and a UI served by the same process."
+  toc={TOC}
+  edit={`${SITE.repo}/blob/main/README.md`}
+  next={{ href: '/docs/quickstart/', title: 'Quick start' }}
+>
+  <h2 id="what-it-does">What it does</h2>
+  <p>
+    karucode is a coding agent you run yourself — and the whole of it is one binary. Point it at a
+    project and it reads the files, searches them, edits them, runs commands with streamed output,
+    and inspects git. It delegates work to subagents, and it keeps going through a multi-step task
+    until the work is done or you stop it.
+  </p>
+  <p>
+    It is one Rust binary. State lives in a SQLite database in WAL mode — projects, sessions, runs
+    and agents. The browser UI is embedded in that binary and served from the same origin, so there
+    is no Node at runtime and nothing else to deploy.
+  </p>
+  <p>
+    The iteration budget belongs to a <em>segment</em>. When it runs out mid-task the runtime
+    refreshes it and continues in the same session, run and transcript:
+  </p>
+
+  <pre class="code kc-budget">{`max_iterations   200  turns per segment
+max_continues     50  refreshes per run
+max_run_secs   86400  a hard wall clock
+
+200 × (50 + 1) = 10,200 turns, or 24 h`}</pre>
+
+  <p>
+    Approvals sit in front of every mutation: <code>ask</code> is the default for shell commands and
+    file writes. On restart, runs left in <code>running</code> become <code>interrupted</code> and
+    pending approvals <code>expired</code>. Nothing is silently retried.
+  </p>
+
+  <h2 id="start-here">Start here</h2>
+  <p>Three pages, in the order most people need them.</p>
+  <StartHere items={START} />
+
+  <h2 id="how-it-is-put-together">How it is put together</h2>
+  <p>
+    Five jobs and one database. Each one is a layer you can reason about on its own, which is the
+    point of keeping the whole thing in a single binary.
+  </p>
+
+  <dl class="kc-jobs">
+    <div class="kc-jobs__row">
+      <dt>axum API + SSE</dt>
+      <dd>
+        Serves the REST API and the embedded UI from one origin. Runs and their events stream to the
+        browser over SSE.
+      </dd>
+    </div>
+    <div class="kc-jobs__row">
+      <dt>agent loop</dt>
+      <dd>
+        Owns approvals, subagents and budgets. Tool calls within a turn run sequentially, on purpose,
+        so approvals and events stay deterministic.
+      </dd>
+    </div>
+    <div class="kc-jobs__row">
+      <dt>provider</dt>
+      <dd>
+        Any endpoint that speaks the OpenAI chat-completions API with streaming tool calls. Providers
+        are install-wide; a session can pin its own model.
+      </dd>
+    </div>
+    <div class="kc-jobs__row">
+      <dt>tools</dt>
+      <dd>Files, search, shell, git, and karucode’s own documentation.</dd>
+    </div>
+    <div class="kc-jobs__row">
+      <dt>plugins + MCP</dt>
+      <dd>
+        Separate processes, namespaced as <code>plugin__&lt;name&gt;__&lt;tool&gt;</code> and
+        <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>, so a third-party tool cannot shadow a
+        built-in one.
+      </dd>
+    </div>
+    <div class="kc-jobs__row">
+      <dt>SQLite (WAL)</dt>
+      <dd>
+        Projects, sessions, runs and agents. This is what makes a crash survivable: a restart resumes
+        the same transcript, with unfinished runs marked <code>interrupted</code> rather than retried.
+      </dd>
+    </div>
+  </dl>
+
+  <p>
+    The home page draws the same stack as a diagram, if you want the picture:
+    <a href="/#architecture">architecture</a>.
+  </p>
+
+  <h2 id="what-it-refuses-to-do">What it refuses to do</h2>
+  <p>
+    These are properties of the design, not gaps waiting to be closed. They are listed here because
+    a tool you expose to a network should tell you where its edges are.
+  </p>
+  <ul>
+    <li>
+      <strong>No shell sandbox.</strong> Commands run as the server user. Use a container or a VM for
+      untrusted code, or for unattended <code>auto</code> mode.
+    </li>
+    <li>
+      <strong>No built-in TLS.</strong> Put a reverse proxy in front for remote access; there is no
+      certificate handling in the binary.
+    </li>
+    <li>
+      <strong>No plugin sandbox and no hot reload.</strong> A plugin is a separate process with your
+      permissions, and a changed binary needs a restart.
+    </li>
+    <li>
+      <strong>No per-project providers</strong>, no team workspaces, no cloud sync, no hosted
+      service, no signup.
+    </li>
+  </ul>
+  <p>
+    The full list lives on the home page under <a href="/#limitations">what it doesn’t do</a>. The
+    trust boundaries — what is contained, what is not, and how to expose it — are on
+    <a href="/security/">Security</a>.
+  </p>
+
+  <h2 id="requirements">Requirements</h2>
+  <ul>
+    <li><strong>Linux</strong> is the primary target. Other Unixes should work.</li>
+    <li><strong>Rust 1.89+</strong> to build from source.</li>
+    <li>
+      <strong>Node 22.12+</strong> only to build the frontend. <code>cargo build</code> drives it,
+      and nothing needs Node at runtime.
+    </li>
+    <li>
+      Optional: <code>git</code>, and <code>ripgrep</code> — a pure-Rust search fallback is built in.
+    </li>
+  </ul>
+  <p>
+    No cloud account, no signup, no telemetry. MIT licensed. Start with
+    <a href="/docs/quickstart/">Quick start</a>.
+  </p>
+</Docs>
+
+<style>
+  .kc-budget {
+    font-size: 0.8125rem;
+    line-height: 1.85;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--text-2);
+  }
+
+  .kc-jobs {
+    display: grid;
+    border-top: 1px solid var(--line);
+  }
+
+  .kc-jobs__row {
+    display: grid;
+    gap: 4px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .kc-jobs dt {
+    font-family: var(--kc-font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .kc-jobs dd {
+    margin: 0;
+    font-size: var(--fs-small);
+    line-height: 1.6;
+    color: var(--text-2);
+  }
+
+  @media (min-width: 640px) {
+    .kc-jobs__row {
+      grid-template-columns: 172px minmax(0, 1fr);
+      align-items: baseline;
+      gap: 20px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .kc-budget {
+      font-size: 0.75rem;
+    }
+  }
+</style>

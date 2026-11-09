@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Not found" path="/404" noindex>
+  <section class="section nf">
+    <div class="wrap">
+      <p class="label"><span class="label__num">404</span> Not found</p>
+      <h1 class="display">This path escapes<br />the workspace.</h1>
+      <p class="lede">Every path karucode resolves is confined: no <code>..</code> escapes, no symlink escapes. This URL didn’t survive either.</p>
+      <div class="nf__actions">
+        <a class="btn btn--primary btn--lg" href="/">Back to the start</a>
+        <a class="btn btn--lg" href="/docs/">Read the docs</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    min-height: 62vh;
+    display: grid;
+    align-items: center;
+  }
+
+  .nf .wrap {
+    display: grid;
+    gap: 22px;
+    justify-items: start;
+  }
+
+  .nf .lede {
+    max-width: 46ch;
+  }
+
+  .nf__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+  }
+</style>

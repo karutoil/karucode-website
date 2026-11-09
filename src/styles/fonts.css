@@ -1,0 +1,33 @@
+/* Brand fonts, self-hosted. Inter + JetBrains Mono, SIL OFL (see public/fonts/*-LICENSE.txt).
+   Licences ship in the folder; nothing here loads from a third-party origin.
+
+   These files are subset to Latin-1 plus the punctuation and arrows the copy uses
+   (em/en dashes, middot, ellipsis, quotes, arrows, comparison signs), which takes
+   the set from 372 KB to 80 KB. If you add copy in another script, re-subset:
+
+     fonttools subset input.ttf --unicodes="U+0020-007E,U+00A0-00FF,U+2010-2027,U+2030-205E,U+20AC,U+2122,U+2190-2193,U+2212,U+2248,U+2264-2266,U+25A0-25CF" \
+       --flavor=woff2 --output-file=public/fonts/inter-400.woff2
+
+   Without a unicode-range, a missing glyph simply falls through to the next
+   family in the stack, so a gap is a font difference, never a tofu box. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-400.woff2') format('woff2');
+}

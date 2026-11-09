@@ -1,0 +1,140 @@
+---
+/**
+ * The three-door index at the top of the docs overview. Rows on hairlines —
+ * no cards, so the page keeps reading as a document rather than a dashboard.
+ */
+interface Item {
+  href: string;
+  title: string;
+  note: string;
+  meta: string;
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="start">
+  {
+    items.map((item) => (
+      <li class="start__item">
+        <a class="start__link" href={item.href}>
+          <span class="start__meta">{item.meta}</span>
+          <span class="start__text">
+            <span class="start__title">{item.title}</span>
+            <span class="start__note">{item.note}</span>
+          </span>
+          <svg
+            class="start__arrow"
+            viewBox="0 0 14 14"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.1"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" />
+          </svg>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .start {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* the prose list styles would give every row a dash and a 1.4em indent */
+  .start > li {
+    padding-left: 0;
+  }
+
+  .start > li::before {
+    display: none;
+  }
+
+  .start__item + .start__item {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .start__link {
+    display: grid;
+    grid-template-columns: 3.5rem minmax(0, 1fr) 14px;
+    align-items: baseline;
+    gap: 14px;
+    padding: 15px 2px;
+    color: var(--text);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .start__meta {
+    font-family: var(--kc-font-mono);
+    font-size: var(--fs-micro);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .start__text {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .start__title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
+  }
+
+  .start__note {
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--text-2);
+  }
+
+  .start__arrow {
+    align-self: center;
+    color: var(--text-3);
+    transition:
+      transform var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+
+  .start__link:hover .start__title {
+    color: var(--accent);
+  }
+
+  .start__link:hover .start__arrow {
+    color: var(--accent);
+    transform: translateX(3px);
+  }
+
+  @media (max-width: 520px) {
+    .start__link {
+      grid-template-columns: minmax(0, 1fr) 14px;
+      gap: 4px 12px;
+    }
+
+    .start__meta {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .start__arrow,
+    .start__link {
+      transition: none;
+    }
+  }
+</style>

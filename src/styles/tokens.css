@@ -1,0 +1,127 @@
+/* karucode website tokens.
+ * Brand primitives are copied verbatim from karucode/branding/tokens/brand.css.
+ * Everything below the "semantic layer" mark is this site's own vocabulary.
+ * Rule from BRAND.md: gold is an accent, never a fill behind gold text. */
+:root {
+  /* ── brand primitives (do not redefine) ───────────────────────────── */
+  --kc-ink-950: #111213;
+  --kc-ink-900: #141516;
+  --kc-ink-850: #18191a;
+  --kc-ink-800: #1c1d1f;
+  --kc-ink-700: #2a2c2f;
+
+  --kc-paper: #eae9e5;
+  --kc-paper-2: #b4b3ae;
+  --kc-muted: #8b8d8c;
+  --kc-light: #f6f4ef;
+
+  --kc-gold: #dfb680;
+  --kc-gold-hi: #f1c691;
+  --kc-gold-deep: #8a5d24;
+  --kc-gold-bg: #32291e;
+  --kc-gold-line: #58452e;
+
+  --kc-green: #88baa0;
+  --kc-red: #e49e91;
+  --kc-blue: #92b3d8;
+
+  --kc-font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --kc-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
+  --kc-radius-sm: 6px;
+  --kc-radius: 10px;
+  --kc-radius-lg: 14px;
+
+  /* ── semantic layer ───────────────────────────────────────────────── */
+  --bg: var(--kc-ink-950);
+  --bg-sunk: #0d0e0f;
+  --bg-raised: var(--kc-ink-850);
+  --surface: #191a1c;
+  --surface-2: #1f2023;
+
+  --text: var(--kc-paper);
+  --text-2: var(--kc-paper-2);
+  --text-3: var(--kc-muted);
+
+  --accent: var(--kc-gold);
+  --accent-hi: var(--kc-gold-hi);
+  --accent-deep: var(--kc-gold-deep);
+  --accent-wash: var(--kc-gold-bg);
+  --accent-line: var(--kc-gold-line);
+
+  --ok: var(--kc-green);
+  --danger: var(--kc-red);
+  --info: var(--kc-blue);
+
+  /* hairlines: on dark, borders are light at low alpha, never a solid grey */
+  --line: rgb(234 233 229 / 0.1);
+  --line-soft: rgb(234 233 229 / 0.06);
+  --line-strong: rgb(234 233 229 / 0.18);
+  --line-gold: rgb(223 182 128 / 0.34);
+
+  /* layout */
+  --page: 1180px;
+  --page-wide: 1360px;
+  --gutter: clamp(20px, 4.5vw, 56px);
+  --section-y: clamp(76px, 9vw, 148px);
+  --rail: 188px; /* must fit the longest rail label, not just the numbers */
+
+  /* type — a small, deliberate scale. 13px labels, 17px prose, then it jumps. */
+  --fs-display: clamp(2.85rem, 7.4vw, 5.9rem);
+  --fs-h1: clamp(2.05rem, 4.2vw, 3.35rem);
+  --fs-h2: clamp(1.6rem, 2.8vw, 2.3rem);
+  --fs-h3: 1.1875rem;
+  --fs-body: 1.0625rem;
+  --fs-lede: clamp(1.125rem, 1.6vw, 1.3125rem);
+  --fs-small: 0.9375rem;
+  --fs-label: 0.8125rem;
+  --fs-micro: 0.6875rem;
+
+  --lh-tight: 0.98;
+  --lh-snug: 1.16;
+  --lh-body: 1.62;
+
+  --tracking-display: -0.045em;
+  --tracking-tight: -0.02em;
+  --tracking-label: 0.15em;
+
+  /* motion */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur: 260ms;
+  --dur-slow: 720ms;
+
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 24px 60px -24px rgb(0 0 0 / 0.85);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 40px 90px -30px rgb(0 0 0 / 0.9);
+}
+
+/* One warm paper section gives the page a beat of light between dark panels.
+   Anything wrapped in .on-light switches the semantic layer instead of
+   hard-coding colours, so components compose in both modes. */
+.on-light {
+  --bg: var(--kc-light);
+  --bg-sunk: #efece4;
+  --bg-raised: #fffdf8;
+  --surface: #fffdf8;
+  --surface-2: #f1eee6;
+
+  --text: #141516;
+  --text-2: #4b4d4e;
+  --text-3: #6b6d6c;
+
+  --accent: var(--kc-gold-deep);
+  --accent-hi: #6d4819;
+  --accent-wash: #f2e6d2;
+  --accent-line: #d8bd97;
+
+  --ok: #2f6b4f;
+  --danger: #9c4231;
+  --info: #35618d;
+
+  --line: rgb(17 18 19 / 0.12);
+  --line-soft: rgb(17 18 19 / 0.07);
+  --line-strong: rgb(17 18 19 / 0.22);
+  --line-gold: rgb(138 93 36 / 0.4);
+
+  color-scheme: light;
+}

@@ -1,0 +1,70 @@
+---
+/**
+ * The shared heading block for every numbered home section.
+ * The number is the page's spine: it matches the left rail and the anchor.
+ */
+interface Props {
+  num: string;
+  kicker: string;
+  title: string;
+  lede?: string;
+  id?: string;
+  align?: 'start' | 'center';
+}
+
+const { num, kicker, title, lede, id, align = 'start' } = Astro.props;
+---
+
+<header class:list={['shead', `shead--${align}`]} id={id}>
+  <p class="label shead__label">
+    <span class="label__num">{num}</span>
+    <span>{kicker}</span>
+    <span class="shead__rule" aria-hidden="true"></span>
+  </p>
+  <h2 class="h2 shead__title">{title}</h2>
+  {lede && <p class="lede shead__lede">{lede}</p>}
+</header>
+
+<style>
+  .shead {
+    display: grid;
+    gap: 14px;
+    max-width: 62ch;
+    margin-bottom: clamp(32px, 4vw, 56px);
+  }
+
+  .shead--center {
+    margin-inline: auto;
+    text-align: center;
+    justify-items: center;
+  }
+
+  .shead__label {
+    width: 100%;
+  }
+
+  .shead--center .shead__label {
+    justify-content: center;
+  }
+
+  .shead__rule {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+    margin-left: 4px;
+  }
+
+  .shead--center .shead__rule {
+    display: none;
+  }
+
+  .shead__title {
+    margin: 0;
+  }
+
+  .shead__lede {
+    margin: 0;
+    max-width: 54ch;
+    text-wrap: pretty;
+  }
+</style>

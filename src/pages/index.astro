@@ -1,0 +1,222 @@
+---
+import Base from '../layouts/Base.astro';
+import Hero from '../components/hero/Hero.astro';
+import Proof from '../components/ui/Proof.astro';
+import Features from '../components/sections/Features.astro';
+import Architecture from '../components/sections/Architecture.astro';
+import Approvals from '../components/sections/Approvals.astro';
+import Performance from '../components/sections/Performance.astro';
+import Limitations from '../components/sections/Limitations.astro';
+import Install from '../components/sections/Install.astro';
+import Faq from '../components/sections/Faq.astro';
+
+/** The numbered spine. Order here is the order on the page and in the rail. */
+const RAIL = [
+  { id: 'what-it-does', num: '01', label: 'What it does' },
+  { id: 'architecture', num: '02', label: 'Architecture' },
+  { id: 'approvals', num: '03', label: 'Approvals' },
+  { id: 'performance', num: '04', label: 'Performance' },
+  { id: 'limitations', num: '05', label: 'What it doesn’t do' },
+  { id: 'install', num: '06', label: 'Install' },
+  { id: 'faq', num: '07', label: 'Questions' },
+];
+---
+
+<Base title="One binary, not a stack" path="/" wide>
+  <div class="progress" aria-hidden="true"><span data-progress></span></div>
+
+  <Hero />
+
+  <Proof />
+
+  <div class="page-body">
+    <aside class="rail" aria-label="On this page">
+      <ol class="rail__list">
+        {
+          RAIL.map((item) => (
+            <li>
+              <a class="rail__link" href={`#${item.id}`} data-rail={item.id}>
+                <span class="rail__num">{item.num}</span>
+                <span class="rail__dot" aria-hidden="true" />
+                <span class="rail__label">{item.label}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </aside>
+
+    <div class="page-body__main">
+      <Features />
+      <Architecture />
+      <Approvals />
+      <Performance />
+      <Limitations />
+      <Install />
+      <Faq />
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Scroll progress: a single 1px gold line at the very top of the page.
+  const bar = document.querySelector<HTMLElement>('[data-progress]');
+  if (bar) {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const p = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+      bar.style.transform = `scaleX(${p})`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+  }
+
+  // Rail scroll-spy: the section under the reading line owns the highlight.
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-rail]'));
+  const sections = links
+    .map((l) => document.getElementById(l.dataset.rail ?? ''))
+    .filter((el): el is HTMLElement => Boolean(el));
+
+  if (sections.length && 'IntersectionObserver' in window) {
+    const visible = new Map<string, number>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) visible.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0);
+        let best = '';
+        let bestRatio = 0;
+        for (const [id, ratio] of visible) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            best = id;
+          }
+        }
+        if (!best) {
+          // nothing intersecting: fall back to whichever section is closest above the fold
+          const y = window.scrollY + window.innerHeight * 0.35;
+          for (const s of sections) if (s.offsetTop <= y) best = s.id;
+        }
+        for (const l of links) l.classList.toggle('is-active', l.dataset.rail === best);
+      },
+      { rootMargin: '-15% 0px -55% 0px', threshold: [0, 0.1, 0.4, 0.75, 1] },
+    );
+    sections.forEach((s) => io.observe(s));
+  }
+</script>
+
+<style>
+  .progress {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 1px;
+    z-index: 101;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .progress span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+    opacity: 0.85;
+  }
+
+  /* The rail is a real grid column on wide screens, so nothing overlaps. */
+  .page-body {
+    position: relative;
+  }
+
+  .rail {
+    display: none;
+  }
+
+  @media (min-width: 1180px) {
+    .page-body {
+      display: grid;
+      grid-template-columns: var(--rail) minmax(0, 1fr);
+      max-width: var(--page-wide);
+      margin-inline: auto;
+    }
+
+    .page-body__main {
+      min-width: 0;
+    }
+
+    .rail {
+      display: block;
+      overflow: hidden;
+      position: sticky;
+      top: 92px;
+      align-self: start;
+      height: max-content;
+      padding-left: clamp(16px, 2vw, 28px);
+      padding-top: calc(var(--section-y) + 6px);
+    }
+
+    .rail__list {
+      display: grid;
+      gap: 3px;
+    }
+
+    .rail__link {
+      display: grid;
+      grid-template-columns: 22px 9px auto;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 0;
+      width: max-content;
+      color: var(--text-3);
+      transition: color var(--dur) var(--ease);
+    }
+
+    .rail__num {
+      font-family: var(--kc-font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      font-variant-numeric: tabular-nums;
+      color: inherit;
+      opacity: 0.7;
+    }
+
+    .rail__dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 99px;
+      background: currentColor;
+      opacity: 0.5;
+      transition: background var(--dur) var(--ease), transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+    }
+
+    .rail__label {
+      font-size: 0.6875rem;
+      letter-spacing: 0.015em;
+      white-space: nowrap;
+    }
+
+    .rail__link:hover {
+      color: var(--text-2);
+    }
+
+    .rail__link.is-active {
+      color: var(--accent);
+    }
+
+    .rail__link.is-active .rail__num {
+      opacity: 1;
+    }
+
+    .rail__link.is-active .rail__dot {
+      opacity: 1;
+      background: var(--accent);
+      transform: scale(1.5);
+    }
+  }
+</style>

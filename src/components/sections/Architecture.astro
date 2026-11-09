@@ -1,0 +1,359 @@
+---
+/**
+ * 02 — Architecture.
+ * The README's ASCII box, rebuilt as real markup: one binary, five jobs, one
+ * SQLite file. Exactly one gold element — the REST + SSE arrow, because that is
+ * the only thing crossing an origin boundary.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+
+const JOBS = [
+  { name: 'axum API + SSE', role: 'embedded UI, same origin' },
+  { name: 'agent loop', role: 'approvals, subagents, budgets' },
+  { name: 'provider', role: 'any OpenAI-compatible endpoint' },
+  { name: 'tools', role: 'files, search, shell, git, docs' },
+  { name: 'plugins + MCP', role: 'out of process, namespaced' },
+];
+
+const FACTS = [
+  {
+    title: 'Same origin',
+    body: 'The UI is embedded and served by the same axum process — no CORS, no second static host.',
+  },
+  {
+    title: 'Streamed by default',
+    body: 'REST for requests, SSE for the transcript — output arrives as it is written.',
+  },
+  {
+    title: 'State you can inspect',
+    body: 'Projects, sessions, runs and agents in one SQLite database in WAL mode.',
+  },
+  {
+    title: 'Out-of-process tools',
+    body: 'Plugins and MCP servers are namespaced and supervised: a crash yields a diagnostic, not an outage.',
+  },
+];
+---
+
+<section class="section section--divided" id="architecture" aria-labelledby="architecture-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="02"
+        kicker="Architecture"
+        title="One binary, five jobs, and a SQLite file."
+        lede="The server embeds the UI, so the browser and the agent share an origin. There is no second process to deploy and no Node at runtime."
+        id="architecture-head"
+      />
+    </div>
+
+    <div class="arch">
+      <figure class="arch__fig">
+        <div class="stack">
+          <div class="node node--browser">
+            <span class="node__name">browser</span>
+            <span class="node__role">Preact UI, served by the same origin</span>
+          </div>
+
+          <div class="link link--stream" aria-hidden="true">
+            <span class="link__line"></span>
+            <span class="link__tag mono">REST + SSE</span>
+            <span class="link__line"></span>
+            <svg class="link__head" viewBox="0 0 10 8" width="10" height="8" fill="none" aria-hidden="true">
+              <path d="M1 1.2 5 6.8 9 1.2" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round"></path>
+            </svg>
+          </div>
+
+          <div class="bin">
+            <div class="bin__head">
+              <span class="bin__name mono">karucode</span>
+              <span class="bin__tag mono">one Rust binary</span>
+            </div>
+            <ul class="bin__jobs">
+              {
+                JOBS.map((job) => (
+                  <li class="job">
+                    <span class="job__name mono">{job.name}</span>
+                    <span class="job__role">{job.role}</span>
+                  </li>
+                ))
+              }
+            </ul>
+            <p class="bin__note">
+              Those last two run out of process and are namespaced
+              (<span class="mono">kc__&lt;plugin&gt;__&lt;tool&gt;</span>). Supervised, so a crash is
+              a diagnostic rather than an outage.
+            </p>
+          </div>
+
+          <div class="link link--data" aria-hidden="true">
+            <span class="link__line"></span>
+          </div>
+
+          <div class="node node--db">
+            <span class="node__name mono">SQLite</span>
+            <span class="node__tag mono">WAL</span>
+            <span class="node__role">projects, sessions, runs, agents</span>
+          </div>
+        </div>
+        <figcaption class="arch__cap mono">
+          figure 02 — processes on one host; the only network hop is the browser's
+        </figcaption>
+      </figure>
+
+      <ul class="facts">
+        {
+          FACTS.map((f) => (
+            <li class="fact">
+              <h3 class="h3">{f.title}</h3>
+              <p class="fact__body">{f.body}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .arch {
+    display: grid;
+    gap: clamp(28px, 4vw, 56px);
+    align-items: start;
+  }
+
+  @media (min-width: 1040px) {
+    .arch {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: clamp(40px, 5vw, 80px);
+    }
+  }
+
+  .arch__fig {
+    margin: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  .arch__cap {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .stack {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+  }
+
+  .node {
+    display: grid;
+    gap: 3px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius-sm);
+    background: var(--bg-raised);
+    min-width: 0;
+  }
+
+  .node--browser {
+    border-style: dashed;
+    background: transparent;
+  }
+
+  .node--db {
+    grid-template-columns: auto auto 1fr;
+    align-items: baseline;
+    gap: 10px;
+    background: var(--bg-sunk);
+  }
+
+  .node__name {
+    font-size: 0.875rem;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .node__tag {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .node__role {
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    line-height: 1.4;
+  }
+
+  .node--db .node__role {
+    text-align: right;
+  }
+
+  /* connectors */
+  .link {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding-block: 6px;
+  }
+
+  .link__line {
+    width: 1px;
+    flex: 1;
+    min-height: 14px;
+    background: var(--line-strong);
+  }
+
+  .link--stream .link__line {
+    background: var(--accent);
+    opacity: 0.7;
+  }
+
+  .link__tag {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .link__head {
+    display: block;
+  }
+
+  /* the binary */
+  .bin {
+    border: 1px solid var(--line-strong);
+    border-radius: var(--kc-radius);
+    background: var(--bg-sunk);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .bin__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bin__name {
+    font-size: 0.875rem;
+    color: var(--text);
+  }
+
+  .bin__tag {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .bin__jobs {
+    display: grid;
+  }
+
+  .job {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 4px 12px;
+    align-items: baseline;
+    padding: 9px 16px 9px 30px;
+    position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .job:last-child {
+    border-bottom: 0;
+  }
+
+  /* the tree branch, drawn in CSS instead of box-drawing characters */
+  .job::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--line);
+  }
+
+  .job:last-child::before {
+    bottom: 50%;
+  }
+
+  .job::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    width: 8px;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .job__name {
+    font-size: 0.8125rem;
+    color: var(--text);
+  }
+
+  .job__role {
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    min-width: 0;
+  }
+
+  @media (max-width: 520px) {
+    .job {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .bin__note {
+    padding: 11px 16px 13px;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--text-3);
+  }
+
+  .bin__note .mono {
+    color: var(--text-2);
+  }
+
+  /* right column */
+  .facts {
+    display: grid;
+    gap: 0;
+  }
+
+  .fact {
+    padding: 18px 0;
+    border-top: 1px solid var(--line-soft);
+    display: grid;
+    gap: 5px;
+  }
+
+  .fact:last-child {
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .fact h3 {
+    font-size: 1rem;
+  }
+
+  .fact__body {
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+    max-width: 42ch;
+  }
+</style>

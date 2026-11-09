@@ -1,0 +1,147 @@
+---
+/**
+ * One copy-able command. Used in the hero, the install section and the docs.
+ * The prompt glyph is gold so the eye lands on the thing to run, not the chrome.
+ */
+interface Props {
+  command: string;
+  prompt?: string;
+  label?: string;
+  wrap?: boolean;
+  class?: string;
+}
+
+const { command, prompt = '$', label, wrap = false, class: className = '' } = Astro.props;
+---
+
+<div class:list={['cmd', className]} data-cmd>
+  <div class="cmd__bar">
+    {label && <span class="cmd__label mono">{label}</span>}
+    <button class="cmd__copy" type="button" data-cmd-copy aria-label={`Copy: ${command}`}>
+      <span data-cmd-text>Copy</span>
+      <svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
+        <rect x="4.5" y="4.5" width="8" height="8" rx="1.5"></rect>
+        <path d="M9.5 4.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"></path>
+      </svg>
+    </button>
+  </div>
+  <pre class:list={['cmd__line', { 'cmd__line--wrap': wrap }]}><span class="cmd__prompt" aria-hidden="true">{prompt}</span><code>{command}</code></pre>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cmd]').forEach((root) => {
+    const btn = root.querySelector<HTMLButtonElement>('[data-cmd-copy]');
+    const text = root.querySelector<HTMLElement>('[data-cmd-text]');
+    const code = root.querySelector('code');
+    if (!btn || !code) return;
+
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(code.textContent ?? '');
+      } catch {
+        // clipboard can be blocked (insecure origin, permissions); the command is selectable anyway
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+      btn.classList.add('is-copied');
+      if (text) text.textContent = 'Copied';
+      window.setTimeout(() => {
+        btn.classList.remove('is-copied');
+        if (text) text.textContent = 'Copy';
+      }, 1400);
+    });
+  });
+</script>
+
+<style>
+  .cmd {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius);
+    background: var(--bg-sunk);
+    overflow: hidden;
+  }
+
+  .cmd__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 8px 7px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    min-height: 34px;
+  }
+
+  .cmd__label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .cmd__bar:not(:has(.cmd__label)) {
+    justify-content: flex-end;
+  }
+
+  .cmd__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  .cmd__copy:hover {
+    color: var(--text);
+    background: rgb(234 233 229 / 0.06);
+  }
+
+  .cmd__copy.is-copied {
+    color: var(--ok);
+  }
+
+  .cmd__line {
+    display: flex;
+    gap: 0.7ch;
+    margin: 0;
+    padding: 14px 16px;
+    font-family: var(--kc-font-mono);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .cmd__line::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cmd__line--wrap {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .cmd__line code {
+    font: inherit;
+    background: none;
+    padding: 0;
+    color: inherit;
+    white-space: inherit;
+  }
+
+  .cmd__prompt {
+    color: var(--accent);
+    user-select: none;
+    flex: none;
+  }
+</style>

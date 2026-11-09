@@ -1,0 +1,25 @@
+{
+  "name": "karucode-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The karucode website \u2014 static site, deployed to Cloudflare Pages.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build && node scripts/csp-hashes.mjs",
+    "preview": "astro preview",
+    "check:types": "astro check",
+    "check:links": "node scripts/check-links.mjs",
+    "check": "npm run check:types && npm run build && npm run check:links && npm run check:csp",
+    "deploy": "npm run check && npx wrangler pages deploy dist --project-name karucode-website",
+    "check:csp": "node scripts/csp-hashes.mjs --check"
+  },
+  "dependencies": {
+    "astro": "^6.4.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@astrojs/check": "^0.9.12"
+  }
+}

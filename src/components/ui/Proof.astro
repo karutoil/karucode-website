@@ -1,0 +1,215 @@
+---
+/**
+ * The product, uncomposited. A real session on a real repository, in a frame that
+ * reads as a browser rather than a marketing mock. Sits directly under the hero.
+ */
+---
+
+<section class="proof" aria-labelledby="proof-title">
+  <div class="wrap wrap--wide">
+    <div class="proof__head">
+      <h2 class="proof__title" id="proof-title">
+        The workspace, not a dashboard demo.
+      </h2>
+      <p class="proof__meta mono">a real session · 1440 × 900</p>
+    </div>
+
+    <figure class="frame reveal">
+      <div class="frame__bar">
+        <span class="frame__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="frame__url mono" aria-hidden="true">127.0.0.1:8787</span>
+        <span class="frame__tag mono" aria-hidden="true">karucode</span>
+      </div>
+      <div class="frame__screen">
+        <picture>
+          <source srcset="/media/session-real.webp" type="image/webp" />
+          <img
+            src="/media/session-real.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            decoding="async"
+            alt="The karucode browser workspace during a real run: a session transcript on the left showing streamed shell output, an approval area, and a file explorer on the right."
+          />
+        </picture>
+      </div>
+    </figure>
+
+    <figcaption class="proof__cap">
+      <p>
+        Streamed tool output, the model and reasoning effort in use, the context budget, and an
+        explorer rooted at the workspace — all served by the binary you just started.
+      </p>
+      <p class="proof__cap-mono mono">no embed · no iframe · no second service</p>
+    </figcaption>
+  </div>
+</section>
+
+<style>
+  .proof {
+    position: relative;
+    padding-bottom: clamp(40px, 6vw, 88px);
+    /* pull the frame up under the hero so it reads as one composition */
+    margin-top: clamp(-40px, -3vw, -16px);
+  }
+
+  /* warm halo behind the frame — the only glow on the page below the hero */
+  /* Spans the section rather than a fixed width: a fixed width wider than the
+     viewport is what gives a page a horizontal scrollbar at some breakpoints. */
+  .proof::before {
+    content: '';
+    position: absolute;
+    inset: 18% 0 auto 0;
+    height: 60%;
+    background: radial-gradient(ellipse at center, rgb(223 182 128 / 0.07), transparent 62%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  .proof__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: clamp(18px, 2.4vw, 28px);
+  }
+
+  .proof__title {
+    font-size: var(--fs-h3);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .proof__meta {
+    font-size: var(--fs-micro);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .frame {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius-lg);
+    background: var(--bg-raised);
+    box-shadow: var(--shadow-lift);
+    overflow: hidden;
+  }
+
+  .frame__bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 38px;
+    padding-inline: 14px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #1d1e21, #191a1c);
+  }
+
+  .frame__dots {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  .frame__dots i {
+    width: 8px;
+    height: 8px;
+    border-radius: 99px;
+    background: #33363a;
+  }
+
+  .frame__dots i:first-child {
+    background: #3d3a34;
+  }
+
+  .frame__url {
+    flex: 1;
+    text-align: center;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+  }
+
+  .frame__tag {
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0.8;
+  }
+
+  .frame__screen {
+    position: relative;
+    background: var(--kc-ink-950);
+  }
+
+  .frame__screen img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* a hairline that suggests the screen continues past the frame */
+  .frame__screen::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+  }
+
+  .proof__cap {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px 40px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-size: var(--fs-small);
+    color: var(--text-3);
+    max-width: 100%;
+  }
+
+  .proof__cap p {
+    margin: 0;
+    max-width: 62ch;
+  }
+
+  .proof__cap-mono {
+    font-size: var(--fs-micro);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .frame {
+      border-radius: var(--kc-radius);
+    }
+
+    .frame__bar {
+      height: 30px;
+      gap: 8px;
+    }
+
+    .frame__url {
+      font-size: 0.5625rem;
+    }
+
+    .frame__tag {
+      display: none;
+    }
+
+    .proof__cap-mono {
+      display: none;
+    }
+  }
+</style>

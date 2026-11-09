@@ -1,0 +1,684 @@
+---
+/**
+ * 03 — Approvals.
+ * The interactive panel: an illustration of one approval request, three ways to
+ * decide, and the audit row each decision writes. Everything is labelled as
+ * illustration; the real panel lives in the product.
+ */
+import SectionHead from '../ui/SectionHead.astro';
+
+const MODES = [
+  { id: 'ask', label: 'ask', note: 'Default. Every shell command and every write is prompted before it runs.' },
+  {
+    id: 'ask_commands',
+    label: 'ask_commands',
+    note: 'Only commands matching the allowlist are prompted for.',
+  },
+  {
+    id: 'auto',
+    label: 'auto',
+    note: 'Unattended: commands and writes run without a prompt. Use a container or a VM for this.',
+  },
+  { id: 'read_only', label: 'read_only', note: 'No mutations at all — shell and write are refused.' },
+];
+---
+
+<section class="section section--divided" id="approvals" aria-labelledby="approvals-head">
+  <div class="wrap">
+    <div class="reveal">
+      <SectionHead
+        num="03"
+        kicker="Approvals"
+        title="Nothing mutates until you say so."
+        lede="Approval mode is ask by default. You see the exact command, and the decision is recorded."
+        id="approvals-head"
+      />
+    </div>
+
+    <div class="appr" data-appr>
+      <div class="panel demo">
+        <div class="demo__bar">
+          <span class="demo__tag mono">approval request</span>
+          <span class="demo__state mono" data-appr-state>pending</span>
+        </div>
+
+        <p class="demo__honest">
+          Illustration of the approval flow. The real one runs in your browser.
+        </p>
+
+        <div class="demo__body">
+          <dl class="req">
+            <div class="req__row">
+              <dt class="mono">tool</dt>
+              <dd class="mono">shell · own process group</dd>
+            </div>
+            <div class="req__row">
+              <dt class="mono">cwd</dt>
+              <dd class="mono">~/work/website</dd>
+            </div>
+            <div class="req__row">
+              <dt class="mono">mode</dt>
+              <dd class="mono">ask</dd>
+            </div>
+          </dl>
+
+          <p class="demo__cmd"><span class="demo__prompt mono" aria-hidden="true">$</span><span class="mono"
+              >git push --force origin main</span
+            ></p>
+          <p class="demo__why">
+            <span class="demo__why-label">Reason</span>Rewrites three commits that are already on
+            <span class="mono">origin/main</span>, which other people have.
+          </p>
+
+          <div class="demo__actions" role="group" aria-label="Decide on this command">
+            <button class="btn btn--primary demo__btn" type="button" data-decision="allow_once" disabled>
+              Allow once
+            </button>
+            <button class="btn demo__btn" type="button" data-decision="allow_session" disabled>
+              Allow for session
+            </button>
+            <button class="btn demo__btn demo__btn--deny" type="button" data-decision="deny" disabled>
+              Deny
+            </button>
+          </div>
+
+          <p class="demo__note" data-appr-note aria-live="polite">Awaiting a decision.</p>
+
+          <noscript>
+            <p class="demo__note demo__note--static">
+              With JavaScript off this panel cannot be driven. The flow it illustrates: allow once
+              runs the command and asks again next time; allow for session records the decision for
+              this session; deny runs nothing and tells the model it was refused. Either way the
+              decision is written to the audit log with a timestamp.
+            </p>
+          </noscript>
+
+          <div class="audit">
+            <div class="audit__head">
+              <span class="audit__title mono">audit log</span>
+              <button class="audit__reset mono" type="button" data-appr-reset disabled>
+                Run it again
+              </button>
+            </div>
+            <ol class="audit__list" data-appr-log role="log" aria-label="Audit log" aria-live="polite">
+              <li class="audit__empty" data-appr-empty>No decisions recorded yet.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side" aria-label="What else is audited">
+        <div class="modes">
+          <h3 class="side__head label">Approval mode</h3>
+          <div class="modes__chips" role="radiogroup" aria-label="Approval mode" data-modes>
+            {
+              MODES.map((m, i) => (
+                <button
+                  class="chip mono"
+                  type="button"
+                  role="radio"
+                  aria-checked={i === 0 ? 'true' : 'false'}
+                  tabindex={i === 0 ? 0 : -1}
+                  data-mode={m.id}
+                >
+                  {m.label}
+                </button>
+              ))
+            }
+          </div>
+          <p class="modes__note" data-mode-note>{MODES[0].note}</p>
+          <p class="modes__foot mono">
+            Set with <span class="modes__var">KARUCODE_APPROVAL_MODE</span>.
+          </p>
+        </div>
+
+        <ul class="audited">
+          <li class="audited__row">
+            <h3 class="side__head label">What else is audited</h3>
+            <p>Allow once, allow for session and deny — every choice is written down.</p>
+          </li>
+          <li class="audited__row">
+            <p>
+              Command-prefix allowlists (<span class="mono">KARUCODE_ALLOW_COMMANDS</span>) — prefixes
+              that are never prompted for.
+            </p>
+          </li>
+          <li class="audited__row">
+            <p>Per-path auto-approval — a path you approved stops asking.</p>
+          </li>
+          <li class="audited__row">
+            <p>
+              <span class="mono">KARUCODE_LOCK_SETTINGS=1</span> removes the UI settings layer, so a
+              deployment can pin settings from the environment and reject browser edits with
+              <span class="mono">403</span>.
+            </p>
+          </li>
+          <li class="audited__row">
+            <p>
+              <span class="mono">KARUCODE_ADMIN_TOKEN</span> is required to change approvals or the
+              endpoint.
+            </p>
+          </li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-appr]');
+
+  if (root) {
+    const log = root.querySelector<HTMLOListElement>('[data-appr-log]');
+    const empty = root.querySelector<HTMLElement>('[data-appr-empty]');
+    const note = root.querySelector<HTMLElement>('[data-appr-note]');
+    const state = root.querySelector<HTMLElement>('[data-appr-state]');
+    const reset = root.querySelector<HTMLButtonElement>('[data-appr-reset]');
+    const decisions = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-decision]'));
+
+    type Result = { label: string; chip: string; tone: string; note: string };
+
+    const RESULTS: Record<string, Result> = {
+      allow_once: {
+        label: 'allow once',
+        chip: 'ran',
+        tone: 'is-ok',
+        note: 'The command ran in its own process group. The next one asks again.',
+      },
+      allow_session: {
+        label: 'allow for session',
+        chip: 'session',
+        tone: 'is-ok',
+        note: 'Recorded for this session — matching commands skip the prompt until you restart it.',
+      },
+      deny: {
+        label: 'deny',
+        chip: 'denied',
+        tone: 'is-danger',
+        note: 'Nothing ran. The model was told the request was denied and keeps working.',
+      },
+    };
+
+    const stamp = () => {
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+
+    const setEnabled = (on: boolean) => {
+      for (const b of decisions) b.disabled = !on;
+      if (reset) reset.disabled = on;
+      if (state) {
+        state.textContent = on ? 'pending' : 'decided';
+        state.classList.toggle('is-decided', !on);
+      }
+    };
+
+    const decide = (kind: string) => {
+      const result = RESULTS[kind];
+      if (!result || !log) return;
+
+      if (empty) empty.remove();
+
+      const row = document.createElement('li');
+      row.className = 'audit__row';
+
+      const time = document.createElement('span');
+      time.className = 'audit__time';
+      time.textContent = stamp();
+
+      const what = document.createElement('span');
+      what.className = 'audit__what';
+      what.textContent = result.label;
+
+      const chip = document.createElement('span');
+      chip.className = `audit__chip ${result.tone}`;
+      chip.textContent = result.chip;
+
+      row.append(time, what, chip);
+      log.append(row);
+
+      if (note) note.textContent = result.note;
+      setEnabled(false);
+      if (reset) reset.focus({ preventScroll: true });
+    };
+
+    const runAgain = () => {
+      if (log) {
+        log.replaceChildren();
+        const placeholder = document.createElement('li');
+        placeholder.className = 'audit__empty';
+        placeholder.setAttribute('data-appr-empty', '');
+        placeholder.textContent = 'No decisions recorded yet.';
+        log.append(placeholder);
+      }
+      if (note) note.textContent = 'Awaiting a decision.';
+      setEnabled(true);
+      decisions[0]?.focus({ preventScroll: true });
+    };
+
+    for (const b of decisions) {
+      b.addEventListener('click', () => decide(b.dataset.decision ?? ''));
+    }
+    reset?.addEventListener('click', runAgain);
+    setEnabled(true);
+
+    // modes: a radiogroup with roving tabindex and arrow keys
+    const group = root.querySelector<HTMLElement>('[data-modes]');
+    const chips = group ? Array.from(group.querySelectorAll<HTMLButtonElement>('[data-mode]')) : [];
+    const noteEl = root.querySelector<HTMLElement>('[data-mode-note]');
+
+    const NOTES: Record<string, string> = {
+      ask: 'Default. Every shell command and every write is prompted before it runs.',
+      ask_commands: 'Only commands matching the allowlist are prompted for.',
+      auto: 'Unattended: commands and writes run without a prompt. Use a container or a VM for this.',
+      read_only: 'No mutations at all — shell and write are refused.',
+    };
+
+    const selectMode = (chip: HTMLButtonElement, focus: boolean) => {
+      for (const c of chips) {
+        const on = c === chip;
+        c.setAttribute('aria-checked', String(on));
+        c.tabIndex = on ? 0 : -1;
+      }
+      if (noteEl) noteEl.textContent = NOTES[chip.dataset.mode ?? ''] ?? '';
+      if (focus) chip.focus({ preventScroll: true });
+    };
+
+    chips.forEach((chip, i) => {
+      chip.addEventListener('click', () => selectMode(chip, false));
+      chip.addEventListener('keydown', (e) => {
+        const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'];
+        if (!keys.includes(e.key)) return;
+        e.preventDefault();
+        let next = i;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % chips.length;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + chips.length) % chips.length;
+        if (e.key === 'Home') next = 0;
+        if (e.key === 'End') next = chips.length - 1;
+        selectMode(chips[next], true);
+      });
+    });
+  }
+</script>
+
+<style>
+  .appr {
+    display: grid;
+    gap: clamp(24px, 3vw, 40px);
+    align-items: start;
+  }
+
+  @media (min-width: 1040px) {
+    .appr {
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+      gap: clamp(32px, 4vw, 64px);
+    }
+  }
+
+  /* ── the panel ─────────────────────────────────────────────────────── */
+  .demo__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-raised);
+  }
+
+  .demo__tag {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .demo__state {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .demo__state.is-decided {
+    color: var(--ok);
+  }
+
+  .demo__honest {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    font-family: var(--kc-font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--text-2);
+  }
+
+  .demo__body {
+    display: grid;
+    gap: 16px;
+    padding: clamp(16px, 2vw, 22px);
+  }
+
+  .req {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .req__row {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+  }
+
+  .req dt {
+    margin: 0;
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .req dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-2);
+    overflow-wrap: anywhere;
+  }
+
+  .demo__cmd {
+    display: flex;
+    gap: 0.9ch;
+    align-items: baseline;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius-sm);
+    background: var(--bg);
+    font-size: 0.875rem;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .demo__prompt {
+    color: var(--accent);
+    flex: none;
+  }
+
+  .demo__why {
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+
+  .demo__why-label {
+    display: block;
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 3px;
+  }
+
+  .demo__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .demo__btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .demo__btn--deny:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  @media (max-width: 520px) {
+    .demo__actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .demo__btn {
+      width: 100%;
+    }
+  }
+
+  .demo__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn--primary:disabled {
+    opacity: 0.4;
+  }
+
+  .demo__btn:disabled:hover {
+    border-color: var(--line-strong);
+    background: transparent;
+    color: var(--text);
+  }
+
+  .btn--primary:disabled:hover {
+    background: var(--kc-gold);
+    border-color: var(--kc-gold);
+    color: var(--kc-ink-950);
+  }
+
+  .demo__note {
+    min-height: 2.9em;
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .demo__note--static {
+    color: var(--text-2);
+  }
+
+  /* ── audit ─────────────────────────────────────────────────────────── */
+  .audit {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .audit__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .audit__title {
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .audit__reset {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding: 3px 0;
+    border-bottom: 1px solid transparent;
+    transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+
+  .audit__reset:not(:disabled):hover {
+    color: var(--text);
+    border-bottom-color: var(--line-strong);
+  }
+
+  .audit__reset:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .audit__list {
+    display: grid;
+    gap: 2px;
+    font-family: var(--kc-font-mono);
+  }
+
+  .audit__list :global(.audit__row) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 5px 0;
+    border-top: 1px solid var(--line-soft);
+    font-size: 0.75rem;
+    animation: row-in 200ms var(--ease);
+  }
+
+  .audit__list :global(.audit__time) {
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .audit__list :global(.audit__what) {
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .audit__list :global(.audit__chip) {
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .audit__list :global(.is-ok) {
+    color: var(--ok);
+  }
+
+  .audit__list :global(.is-danger) {
+    color: var(--danger);
+  }
+
+  .audit__empty {
+    font-size: 0.75rem;
+    color: var(--text-3);
+    padding: 5px 0;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  @keyframes row-in {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ── side column ───────────────────────────────────────────────────── */
+  .side {
+    display: grid;
+    gap: clamp(22px, 2.6vw, 32px);
+  }
+
+  .side__head {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .modes__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .chip {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--kc-radius-sm);
+    color: var(--text-2);
+    background: transparent;
+    transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+      background var(--dur) var(--ease);
+  }
+
+  .chip:hover {
+    color: var(--text);
+    border-color: var(--kc-muted);
+  }
+
+  .chip[aria-checked='true'] {
+    color: var(--accent);
+    border-color: var(--line-gold);
+    background: var(--accent-wash);
+  }
+
+  .modes__note {
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+    min-height: 3.1em;
+  }
+
+  .modes__foot {
+    margin-top: 8px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+  }
+
+  .modes__var {
+    color: var(--text-2);
+  }
+
+  .audited {
+    display: grid;
+  }
+
+  .audited__row {
+    padding: 14px 0;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .audited__row:last-child {
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .audited__row p {
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+
+  .audited__row .side__head {
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 1040px) {
+    .audited {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 28px;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .audited {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
