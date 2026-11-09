@@ -251,6 +251,16 @@ sudo sh install.sh --workspace .`}
     border-top: 1px solid var(--line-soft);
   }
 
+  /* On a short laptop screen this strip is the only thing below the fold, and it
+     repeats the tool list the readout card already shows beside it. Drop the
+     repetition rather than the install command or the headline. It has to come
+     after the base rule: both selectors have the same specificity. */
+  @media (min-width: 1080px) and (max-height: 820px) {
+    .hero__strip {
+      display: none;
+    }
+  }
+
   .hero__pillars,
   .hero__lic {
     font-size: var(--fs-micro);
