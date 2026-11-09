@@ -16,7 +16,7 @@ const START = [
     meta: '01',
     href: '/docs/quickstart/',
     title: 'Quick start',
-    note: 'Nothing installed yet. Clone the repo, point it at a model, run your first task.',
+    note: 'Nothing installed yet. One script, the wizard, then your first task.',
   },
   {
     meta: '02',
@@ -39,7 +39,7 @@ const START = [
   description="Documentation for karucode: what it does, how it is put together, what it refuses to do, and what it needs to run."
   path="/docs/"
   section="Docs"
-  lede="One binary, not a stack: 10.5 MiB of Rust, one SQLite file for state, any OpenAI-compatible endpoint, and a UI served by the same process."
+  lede="One binary, not a stack: 27.9 MiB of Rust, one SQLite file for state, any OpenAI-compatible endpoint, and a UI served by the same process."
   toc={TOC}
   edit={`${SITE.repo}/blob/main/README.md`}
   next={{ href: '/docs/quickstart/', title: 'Quick start' }}
@@ -57,15 +57,16 @@ const START = [
     is no Node at runtime and nothing else to deploy.
   </p>
   <p>
-    The iteration budget belongs to a <em>segment</em>. When it runs out mid-task the runtime
-    refreshes it and continues in the same session, run and transcript:
+    A run is not cut off by a turn counter. <code>max_iterations</code> defaults to
+    <code>0</code>, which means no ceiling: the model works until the task is done, you cancel it,
+    or the wall clock runs out.
   </p>
 
-  <pre class="code kc-budget">{`max_iterations   200  turns per segment
-max_continues     50  refreshes per run
-max_run_secs   86400  a hard wall clock
+  <pre class="code kc-budget">{`max_iterations      0  no turn ceiling (default)
+max_run_secs    86400  hard wall clock, 24 h
+loop guard             stops a run repeating itself
 
-200 × (50 + 1) = 10,200 turns, or 24 h`}</pre>
+a non-zero max_iterations is an optional backstop`}</pre>
 
   <p>
     Approvals sit in front of every mutation: <code>ask</code> is the default for shell commands and
@@ -94,8 +95,9 @@ max_run_secs   86400  a hard wall clock
     <div class="kc-jobs__row">
       <dt>agent loop</dt>
       <dd>
-        Owns approvals, subagents and budgets. Tool calls within a turn run sequentially, on purpose,
-        so approvals and events stay deterministic.
+        Owns approvals, subagents and budgets. Independent tool calls run in parallel; anything that
+        can see a sibling’s effects — shell, plugins, MCP, subagents, approvals — runs in call order,
+        so the transcript is the one a sequential run would have produced.
       </dd>
     </div>
     <div class="kc-jobs__row">
@@ -107,7 +109,8 @@ max_run_secs   86400  a hard wall clock
     </div>
     <div class="kc-jobs__row">
       <dt>tools</dt>
-      <dd>Files, search, shell, git, and karucode’s own documentation.</dd>
+      <dd>Files, search, shell, git, and karucode’s own documentation — plus a PTY terminal tab
+        for you, which the model cannot call.</dd>
     </div>
     <div class="kc-jobs__row">
       <dt>plugins + MCP</dt>
@@ -146,8 +149,9 @@ max_run_secs   86400  a hard wall clock
       certificate handling in the binary.
     </li>
     <li>
-      <strong>No plugin sandbox and no hot reload.</strong> A plugin is a separate process with your
-      permissions, and a changed binary needs a restart.
+      <strong>No plugin sandbox.</strong> A plugin is a separate process with your permissions. A
+      rebuilt plugin is picked up by a reload — <code>POST /api/plugins/reload</code>, or
+      <code>plugins_watch</code> — rather than by restarting the server.
     </li>
     <li>
       <strong>No per-project providers</strong>, no team workspaces, no cloud sync, no hosted
@@ -162,11 +166,13 @@ max_run_secs   86400  a hard wall clock
 
   <h2 id="requirements">Requirements</h2>
   <ul>
-    <li><strong>Linux</strong> is the primary target. Other Unixes should work.</li>
-    <li><strong>Rust 1.89+</strong> to build from source.</li>
     <li>
-      <strong>Node 22.12+</strong> only to build the frontend. <code>cargo build</code> drives it,
-      and nothing needs Node at runtime.
+      <strong>Linux, x86_64</strong> for the published release. The installer needs
+      <code>curl</code> and <code>sh</code>; the systemd path needs root.
+    </li>
+    <li>
+      <strong>No compiler.</strong> The release is a prebuilt binary with the UI inside it — Rust
+      1.89+ and Node 22.12+ are only needed to build from source.
     </li>
     <li>
       Optional: <code>git</code>, and <code>ripgrep</code> — a pure-Rust search fallback is built in.

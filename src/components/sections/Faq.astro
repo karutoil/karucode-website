@@ -19,16 +19,16 @@ const QA = [
     a: 'Anything that speaks the OpenAI chat-completions API with streaming tool calls — a gateway, vLLM, Ollama, llama.cpp, OpenRouter. The provider is install-wide; a session can pin its own provider, model and reasoning effort.',
   },
   {
-    q: 'Does it need Node at runtime?',
-    a: 'No. Node 22.12+ is only needed to build the frontend, which is embedded in the binary.',
+    q: 'Does it need Rust or Node to install?',
+    a: 'Neither. The release is a prebuilt binary: the installer fetches the tarball, verifies it against `SHA256SUMS` and installs it — Rust 1.89+ and Node 22.12+ are only needed to build from source.',
   },
   {
     q: 'Is the shell sandboxed?',
     a: 'No — and that is stated plainly. Commands run as the server user; approvals are the gate. Use a container or VM for untrusted code or unattended `auto` mode. File tools are confined: no `..`, no absolute paths outside, symlink escapes refused, writes atomic.',
   },
   {
-    q: 'What happens when the iteration budget runs out?',
-    a: 'A run is not allowed to die because it used its first budget. The budget belongs to a segment; when it ends mid-task the runtime writes a `[runtime checkpoint]` turn and continues in the same session, run and transcript — up to ~10,200 turns or a 24 h wall clock.',
+    q: 'How long can one run go?',
+    a: 'There is no turn ceiling by default: `max_iterations` is `0`, so a long task is not cut off by a counter and no continuation turn is injected into the transcript. A run ends when the work is done, when you cancel it, at the 24 h wall clock (`max_run_secs`), or when the loop guard catches it repeating itself. A non-zero `max_iterations` is an optional backstop.',
   },
   {
     q: 'What does it send to my provider?',

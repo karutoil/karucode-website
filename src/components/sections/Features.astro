@@ -43,8 +43,8 @@ const gold =
         </div>
         <h3 class="h3">Long-horizon runs</h3>
         <p class="feat__body">
-          The iteration budget is per segment. When it runs out mid-task it refreshes and the run
-          continues — up to <span class="mono">~10,200 turns</span> or <span class="mono">24 h</span>.
+          No turn ceiling by default. A run ends when the work is done, when you cancel it, or at
+          the <span class="mono">24 h</span> wall clock — not because a counter ran out.
         </p>
       </article>
 
@@ -65,7 +65,7 @@ const gold =
         <h3 class="h3">Real tools, real side effects</h3>
         <p class="feat__body">
           Read, search, edit; shell with streamed output in its own process group; git; subagents.
-          Every result is bounded, with a truncation marker.
+          Independent calls run in parallel; every result is bounded with a truncation marker.
         </p>
       </article>
 

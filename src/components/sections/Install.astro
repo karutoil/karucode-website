@@ -1,31 +1,40 @@
 ---
 /**
  * 06 — Install.
- * A real tablist: three ways in, every command one that exists. All panels are
- * rendered in the HTML; JS only hides the inactive ones, so the panel still
- * reads with JS off.
+ *
+ * There is exactly one install method: packaging/install.sh, which takes the
+ * released tarball, checks it against the release SHA256SUMS and installs the
+ * binary (plus a systemd unit, unless you say otherwise). The three tabs are
+ * modes of that one script, not competing routes — no source build, no
+ * container, no cargo. Every command exists as written.
+ *
+ * All panels are rendered in the HTML; JS only hides the inactive ones, so the
+ * panel still reads with JS off.
  */
 import SectionHead from '../ui/SectionHead.astro';
 import Cmd from '../ui/Cmd.astro';
 
 const TABS = [
-  { id: 'source', label: 'Source' },
-  { id: 'container', label: 'Container' },
-  { id: 'systemd', label: 'systemd' },
+  { id: 'service', label: 'As a service' },
+  { id: 'user', label: 'No root' },
+  { id: 'upgrade', label: 'Upgrade' },
 ];
+
+/** The only install path there is. Downloaded to a file, then run. */
+const INSTALLER = 'https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh';
 
 const NOTES = [
   {
-    label: 'Bind',
-    body: 'A non-loopback bind is refused without KARUCODE_AUTH_TOKEN (16+ characters).',
+    label: 'Verified',
+    body: 'The tarball is checked against the release SHA256SUMS before anything is unpacked.',
   },
   {
-    label: 'TLS',
-    body: 'There is no TLS in the binary. Put it behind a reverse proxy or an SSH tunnel.',
+    label: 'Runs as you',
+    body: 'The service runs as the account that ran the installer — never root, never a new user.',
   },
   {
-    label: 'Optional',
-    body: 'ripgrep — a pure-Rust fallback is built in — and git.',
+    label: 'Then',
+    body: 'Open 127.0.0.1:8787: the wizard takes the model endpoint and a password or passkey.',
   },
 ];
 ---
@@ -36,14 +45,14 @@ const NOTES = [
       <SectionHead
         num="06"
         kicker="Install"
-        title="From clone to a running session in two commands."
-        lede="Linux. Rust 1.89+ for the server, Node 22.12+ only to build the frontend. No cloud account, no signup."
+        title="One script, one binary, one service."
+        lede="It downloads the release tarball, verifies it against SHA256SUMS, then installs the binary and a systemd unit. No Rust, no Node, no container — and nothing piped into a shell."
         id="install-head"
       />
     </div>
 
     <div class="tabs" data-tabs>
-      <div class="tabs__list" role="tablist" aria-label="Install method">
+      <div class="tabs__list" role="tablist" aria-label="Installer modes">
         {
           TABS.map((t, i) => (
             <button
@@ -65,104 +74,103 @@ const NOTES = [
         <div
           class="tpanel"
           role="tabpanel"
-          id="panel-source"
-          aria-labelledby="tab-source"
+          id="panel-service"
+          aria-labelledby="tab-service"
           tabindex="0"
         >
           <ol class="steps">
             <li class="step">
               <span class="step__num mono">01</span>
               <div class="step__body">
-                <p class="step__note">Clone it, then point it at your project and your gateway.</p>
-                <Cmd
-                  label="shell"
-                  wrap
-                  command="git clone https://github.com/karutoil/karucode && cd karucode"
-                />
+                <p class="step__note">
+                  Fetch the installer from the repository. It is a plain POSIX shell script, so you
+                  can read it before you run it.
+                </p>
+                <Cmd label="shell" wrap command={`curl -fsSLO ${INSTALLER}`} />
               </div>
             </li>
             <li class="step">
               <span class="step__num mono">02</span>
               <div class="step__body">
                 <p class="step__note">
-                  Set <span class="mono">KARUCODE_BASE_URL</span>,
-                  <span class="mono">KARUCODE_API_KEY</span> and
-                  <span class="mono">KARUCODE_MODEL</span> first, then run the server.
+                  Run it with the directory sessions start in. It installs to
+                  <span class="mono">/usr/local/bin</span>, enables the unit at boot and starts it.
                 </p>
                 <Cmd
                   label="shell"
                   wrap
-                  command="cargo run --release -p kc-server -- --workspace /path/to/your/project"
+                  command="sudo sh install.sh --workspace /srv/karucode/workspace"
                 />
               </div>
             </li>
           </ol>
           <p class="tpanel__foot">
-            <span class="mono">cargo build</span> also builds and embeds the frontend, so that is the
-            whole build. Then open <span class="mono">http://127.0.0.1:8787</span>.
+            It reports success only once <span class="mono">/api/health</span> answers. The previous
+            binary is kept as <span class="mono">karucode.old</span>, and a failed start restores it.
+            There is no default workspace: drop <span class="mono">--workspace</span> and the server
+            starts with no project, which you add in the web UI.
           </p>
         </div>
 
         <div
           class="tpanel"
           role="tabpanel"
-          id="panel-container"
-          aria-labelledby="tab-container"
+          id="panel-user"
+          aria-labelledby="tab-user"
           tabindex="0"
         >
           <ol class="steps">
             <li class="step">
               <span class="step__num mono">01</span>
-              <div class="step__body">
-                <p class="step__note">Build the image from the repository root.</p>
-                <Cmd label="shell" wrap command="docker build -t karucode ." />
-              </div>
-            </li>
-            <li class="step">
-              <span class="step__num mono">02</span>
               <div class="step__body">
                 <p class="step__note">
-                  Run it with tokens, a data volume and your project mounted at
-                  <span class="mono">/workspace</span>.
+                  The same script, with no root and no systemd: the binary goes into your own
+                  <span class="mono">~/.local/bin</span>.
                 </p>
                 <Cmd
                   label="shell"
                   wrap
-                  command="docker run -d --name karucode -p 8787:8787 -e KARUCODE_AUTH_TOKEN=... -e KARUCODE_ADMIN_TOKEN=... -v karucode-data:/data -v /path/to/project:/workspace karucode"
+                  command={`curl -fsSLO ${INSTALLER}\nsh install.sh --prefix "$HOME/.local" --no-systemd`}
                 />
               </div>
             </li>
           </ol>
           <p class="tpanel__foot">
-            The container is the isolation boundary — the shell inside it is still not sandboxed by
-            karucode itself.
+            Then run it in the foreground with
+            <span class="mono">karucode --workspace /path/to/project</span>. State lives in
+            <span class="mono">~/.local/share/karucode</span>.
           </p>
         </div>
 
         <div
           class="tpanel"
           role="tabpanel"
-          id="panel-systemd"
-          aria-labelledby="tab-systemd"
+          id="panel-upgrade"
+          aria-labelledby="tab-upgrade"
           tabindex="0"
         >
           <ol class="steps">
             <li class="step">
               <span class="step__num mono">01</span>
               <div class="step__body">
-                <p class="step__note">The installer takes the workspace the service may touch.</p>
+                <p class="step__note">
+                  Re-running the installer <em>is</em> the upgrade: it fetches the latest release and
+                  restarts the service. To stay on a version, name it.
+                </p>
                 <Cmd
                   label="shell"
                   wrap
-                  command="sudo ./packaging/install.sh --workspace /srv/karucode/workspace"
+                  command={`sudo sh install.sh\nsudo sh install.sh --version 0.1.0   # pin a release`}
                 />
               </div>
             </li>
           </ol>
           <p class="tpanel__foot">
-            It downloads the release tarball, checks it against
-            <span class="mono">SHA256SUMS</span> and only then unpacks it. Nothing is piped from the
-            network into a shell.
+            Your workspace, user, port and data directory live in a drop-in at
+            <span class="mono">/etc/systemd/system/karucode.service.d/10-install.conf</span>, which
+            every run rewrites from what it finds — so an upgrade cannot lose the configuration that
+            made the service start. <span class="mono">--dry-run</span> prints a run without doing
+            it.
           </p>
         </div>
       </div>
@@ -191,7 +199,7 @@ const NOTES = [
             stroke-linejoin="round"></path>
         </svg>
       </a>
-      <span class="cta__note mono">MIT licensed · the systemd installer checks its tarball against SHA256SUMS</span>
+      <span class="cta__note mono">MIT licensed · x86_64 Linux release · the installer verifies SHA256SUMS</span>
     </div>
   </div>
 </section>

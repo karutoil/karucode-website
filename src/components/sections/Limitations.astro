@@ -19,8 +19,8 @@ const LIMITS = [
     body: 'Subagents see the parent’s live workspace, dirty and untracked files included. `owned_paths` is advisory, not a lock.',
   },
   {
-    label: 'Sequential tools',
-    body: 'Tool calls within a turn run one at a time — deliberate, for deterministic approvals and events.',
+    label: 'Ordered side effects',
+    body: 'Shell, plugins, MCP and subagents always run in call order. Only calls the runtime can prove independent — reads, searches, disjoint writes — run at the same time.',
   },
   {
     label: 'MCP is tools only',
@@ -28,7 +28,7 @@ const LIMITS = [
   },
   {
     label: 'Plugins are processes',
-    body: 'Not Wasm: no filesystem sandbox around a plugin, and no hot reload of a changed binary.',
+    body: 'Not Wasm: no filesystem sandbox around a plugin. A rebuilt one is picked up by a reload — `POST /api/plugins/reload`, or `plugins_watch` — not by restarting the server.',
   },
   {
     label: 'Install-wide providers',

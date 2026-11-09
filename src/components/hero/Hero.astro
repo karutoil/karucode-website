@@ -15,14 +15,14 @@ import Readout from './Readout.astro';
 
   <div class="wrap wrap--wide hero__inner">
     <div class="hero__copy reveal">
-      <p class="label hero__kicker">10.5 mib · 10.2 mib rss · no node at runtime</p>
+      <p class="label hero__kicker">27.9 mib · 19.2 mib rss · no node at runtime</p>
 
       <h1 class="display hero__title" id="hero-title">
         A coding agent that is one binary, <span class="hero__accent">not a stack.</span>
       </h1>
 
       <p class="lede hero__lede">
-        Ten and a half megabytes, one SQLite file, and a UI served by the same process.
+        The agent, the API and the whole UI in one file, with one SQLite database beside it.
         Nothing to deploy but the binary.
       </p>
 
@@ -34,12 +34,14 @@ import Readout from './Readout.astro';
       <Cmd
         class="hero__cmd"
         label="shell"
-        command="cargo run --release -p kc-server -- --workspace ."
+        wrap
+        command={`curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
+sudo sh install.sh --workspace .`}
       />
 
       <p class="hero__note mono">
         <span class="tick" aria-hidden="true"></span>
-        Then try it on a real bug: <code>examples/demo-app</code> ships with two failing tests.
+        Then open <code>127.0.0.1:8787</code>: the wizard takes your endpoint and a password.
       </p>
     </div>
 
@@ -49,7 +51,7 @@ import Readout from './Readout.astro';
 
     <div class="hero__strip">
       <p class="hero__pillars mono">read · search · edit · shell · git · subagents · mcp</p>
-      <p class="hero__lic mono">MIT licensed<span class="hero__sep" aria-hidden="true">·</span>Rust 1.89+</p>
+      <p class="hero__lic mono">MIT licensed<span class="hero__sep" aria-hidden="true">·</span>x86_64 Linux</p>
     </div>
   </div>
 </section>

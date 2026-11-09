@@ -1,8 +1,10 @@
 # karucode-website
 
 The marketing site for [karucode](https://github.com/karutoil/karucode) — a coding agent
-that is one 10.5 MiB Rust binary, not a stack. Static Astro site, no server, no runtime
-dependencies.
+that is one binary, not a stack. Static Astro site, no server, no runtime dependencies.
+
+Every number on the site is measured and recorded in `docs/FACTS.md`; the install path it
+documents is `packaging/install.sh` in the karucode repository and nothing else.
 
 ```bash
 npm install

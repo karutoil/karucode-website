@@ -6,23 +6,23 @@ import { SITE } from '../../site';
 
 const TOC = [
   { id: 'prerequisites', label: 'Prerequisites' },
-  { id: 'get-the-code', label: 'Get the code' },
-  { id: 'point-it-at-a-model', label: 'Point it at a model' },
-  { id: 'run-it', label: 'Run it' },
-  { id: 'flags', label: 'Flags' },
+  { id: 'install', label: 'Install' },
+  { id: 'first-run', label: 'First run' },
+  { id: 'flags', label: 'Installer flags' },
   { id: 'try-it-on-a-real-bug', label: 'Try it on a real bug' },
   { id: 'providers-that-work', label: 'Providers that work' },
-  { id: 'server-installs', label: 'Server installs' },
+  { id: 'upgrades', label: 'Upgrades' },
   { id: 'exposing-it', label: 'Exposing it' },
 ];
 
 const FLAGS = [
-  { flag: '--help', meaning: 'Every flag the binary takes, as built.' },
-  { flag: '--host', meaning: 'Bind address. Overrides KARUCODE_HOST.' },
-  { flag: '--port', meaning: 'Port. Overrides KARUCODE_PORT; the default is 8787.' },
-  { flag: '--workspace', meaning: 'The default workspace root. Overrides KARUCODE_WORKSPACE.' },
-  { flag: '--data-dir', meaning: 'Where the SQLite database and plugin data live.' },
-  { flag: '--config', meaning: 'Path to the TOML config file. Overrides KARUCODE_CONFIG.' },
+  { flag: '--workspace DIR', meaning: 'Create this directory and use it as the first project.' },
+  { flag: '--version VER', meaning: 'Release to install instead of the latest, e.g. 0.1.0.' },
+  { flag: '--prefix DIR', meaning: 'Install the binary to DIR/bin. Default /usr/local.' },
+  { flag: '--no-systemd', meaning: 'Binary only: no unit, no service user, no root needed.' },
+  { flag: '--data-dir DIR', meaning: 'SQLite database and plugin data. Default ~/.local/share/karucode.' },
+  { flag: '--port N', meaning: 'Listen port. Default 8787.' },
+  { flag: '--dry-run', meaning: 'Print every action and change nothing. Works without root.' },
 ];
 
 const PROVIDERS = [
@@ -36,32 +36,34 @@ const PROVIDERS = [
 
 <Docs
   title="Quick start"
-  description="Clone karucode, point it at an OpenAI-compatible endpoint, run the server, and give it a task."
+  description="Install karucode from the verified release tarball, point it at an OpenAI-compatible endpoint, and give it a task."
   path="/docs/quickstart/"
   section="Docs"
-  lede="Clone it, point it at a model, run a task."
+  lede="Install the binary, point it at a model, run a task."
   toc={TOC}
   edit={`${SITE.repo}/blob/main/README.md`}
   prev={{ href: '/docs/', title: 'Overview' }}
   next={{ href: '/docs/configuration/', title: 'Configuration' }}
 >
   <p>
-    Most of the time in this page goes into the first <code>cargo build</code>. You need a machine
-    that can compile Rust, and an OpenAI-compatible endpoint — a local gateway, a hosted API, or a
-    model server you already run.
+    The release is a prebuilt binary with the UI inside it, so there is nothing to compile. What you
+    need is a machine that can reach an OpenAI-compatible endpoint — a local gateway, a hosted API,
+    or a model server you already run.
   </p>
 
   <h2 id="prerequisites">Prerequisites</h2>
   <ul>
-    <li><strong>Rust 1.89+</strong> — <code>rustup</code> is the usual way to get it.</li>
+    <li><strong>Linux, x86_64</strong> — the target the release is built for.</li>
     <li>
-      <strong>Node 22.12+</strong> — only to build the frontend. <code>cargo build</code> runs the
-      frontend build for you; nothing needs Node at runtime.
+      <strong><code>curl</code> and <code>sh</code></strong> — the installer is a POSIX shell script.
     </li>
-    <li><strong>Linux</strong> — the primary target. Other Unixes should work.</li>
     <li>
-      Optional: <code>git</code>, and <code>ripgrep</code> — there is a pure-Rust search fallback if
-      you don’t have it.
+      <strong>systemd</strong> for the service install. Without it, use
+      <code>--no-systemd</code> and run the binary yourself.
+    </li>
+    <li>
+      <strong>No Rust and no Node.</strong> Those are only needed to build from source, which is a
+      contributor workflow, not an install path.
     </li>
   </ul>
   <p>
@@ -69,53 +71,57 @@ const PROVIDERS = [
     to the endpoint you give it and to nothing else.
   </p>
 
-  <h2 id="get-the-code">Get the code</h2>
-  <Cmd label="shell" wrap command="git clone https://github.com/karutoil/karucode && cd karucode" />
+  <h2 id="install">Install</h2>
   <p>
-    The repository holds the server, the embedded UI and the packaging files. Nothing needs
-    installing at runtime — the binary is the deployment.
-  </p>
-
-  <h2 id="point-it-at-a-model">Point it at a model</h2>
-  <p>
-    Three variables. <code>KARUCODE_BASE_URL</code> is the gateway, <code>KARUCODE_API_KEY</code> is
-    what it authenticates with (it falls back to <code>OPENAI_API_KEY</code>), and
-    <code>KARUCODE_MODEL</code> is the model id you want.
+    Download the installer, then run it. It fetches the release tarball, verifies it against the
+    release’s <code>SHA256SUMS</code>, and only then unpacks and installs — nothing is piped from the
+    network into a shell.
   </p>
   <Cmd
     label="shell"
     prompt=""
     wrap
-    command={`export KARUCODE_BASE_URL=http://127.0.0.1:4000/v1
-export KARUCODE_API_KEY=sk-...
-export KARUCODE_MODEL=gpt-4o-mini`}
+    command={`curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
+sudo sh install.sh --workspace /srv/karucode/workspace`}
   />
   <p>
-    <code>base_url</code> is a prefix, not a full URL: karucode appends
-    <code>/chat/completions</code> to it. Point it at the <code>/v1</code> root of your gateway, not
-    at a single endpoint.
+    It installs <code>/usr/local/bin/karucode</code>, writes a hardened systemd unit plus a drop-in
+    with this machine’s paths, enables it at boot, starts it, and waits until
+    <code>/api/health</code> answers before reporting success. The previous binary is kept as
+    <code>karucode.old</code>; a failed start restores it. <code>--dry-run</code> prints the whole
+    plan without changing anything.
   </p>
+  <Callout kind="note" title="No root? Same script.">
+    <p>
+      <code>sh install.sh --prefix "$HOME/.local" --no-systemd</code> puts the binary in
+      <code>~/.local/bin</code> and leaves the service alone. Run it in the foreground with
+      <code>karucode --workspace /path/to/project</code>.
+    </p>
+  </Callout>
 
-  <h2 id="run-it">Run it</h2>
-  <Cmd
-    label="shell"
-    wrap
-    command="cargo run --release -p kc-server -- --workspace /path/to/your/project"
-  />
+  <h2 id="first-run">First run</h2>
   <p>
-    <code>cargo build</code> also builds and embeds the frontend, so that one build is the whole
-    build. Then open <a href="http://127.0.0.1:8787">http://127.0.0.1:8787</a>, create a session,
-    type a task, and approve the commands you want it to run.
+    Open <a href="http://127.0.0.1:8787">http://127.0.0.1:8787</a>. The first-run wizard takes the
+    rest in six steps: the model endpoint (with a live “Test connection”), appearance, approval mode,
+    and a password or passkey.
+  </p>
+  <p>
+    The endpoint is a prefix, not a full URL: karucode appends <code>/chat/completions</code> to it.
+    Point it at the <code>/v1</code> root of your gateway, not at a single endpoint. The same three
+    values can be set from the environment instead — <code>KARUCODE_BASE_URL</code>,
+    <code>KARUCODE_API_KEY</code> (it falls back to <code>OPENAI_API_KEY</code>) and
+    <code>KARUCODE_MODEL</code> — which is what a sealed deployment does.
   </p>
   <p>
     The default approval mode is <code>ask</code>: shell commands and file writes wait for you. You
-    can answer allow-once, allow-for-session or deny, and every decision is recorded.
+    can answer allow-once, allow-for-session or deny, and every decision is recorded. A password or
+    passkey is optional on loopback, and required before you expose the UI.
   </p>
 
-  <h2 id="flags">Flags</h2>
+  <h2 id="flags">Installer flags</h2>
   <p>
-    A flag beats the environment variable of the same name for the process it starts, which is the
-    quickest way to run two instances with two different workspaces.
+    Every flag is optional except that the systemd path needs root and a prefix it can write.
+    <code>sh install.sh --help</code> prints the full list.
   </p>
   <div class="table-wrap">
     <table>
@@ -140,11 +146,12 @@ export KARUCODE_MODEL=gpt-4o-mini`}
 
   <h2 id="try-it-on-a-real-bug">Try it on a real bug</h2>
   <p>
-    <code>examples/demo-app</code> in the repo is a dependency-free Node project with a planted bug:
-    <code>add()</code> subtracts instead of adding, so two of its five tests fail. Start the server
-    against it:
+    Point it at a project you already have — a checkout with a failing test is the honest first task.
+    In the UI, add the project, start a session and describe the bug. If you want a known case,
+    <code>examples/demo-app</code> in the repository is a dependency-free Node project with a planted
+    bug: <code>add()</code> subtracts instead of adding, so two of its five tests fail.
   </p>
-  <Cmd label="shell" wrap command="cargo run --release -p kc-server -- --workspace examples/demo-app" />
+  <Cmd label="shell" wrap command="karucode --workspace examples/demo-app" />
   <p>Then give it this prompt:</p>
   <blockquote>
     <p>
@@ -191,36 +198,25 @@ export KARUCODE_MODEL=gpt-4o-mini`}
     provider and reasoning effort. See <a href="/docs/configuration/">Configuration</a>.
   </p>
 
-  <h2 id="server-installs">Server installs</h2>
+  <h2 id="upgrades">Upgrades</h2>
   <p>
-    For anything long-lived, <code>packaging/</code> in the repo holds a container build and a
-    systemd installer. Release tarballs are verified against the release <code>SHA256SUMS</code>
-    before install, and nothing is piped from the network into a shell — there is no
-    <code>curl | bash</code> installer.
+    Re-running the installer is the upgrade — it fetches the latest release and restarts the service:
   </p>
-  <Cmd
-    label="container"
-    prompt=""
-    wrap
-    command={`docker build -t karucode packaging/
-docker run --rm -p 127.0.0.1:8787:8787 \\
-  -e KARUCODE_BASE_URL=http://127.0.0.1:4000/v1 \\
-  --mount type=bind,source="$PWD",target=/workspace \\
-  karucode`}
-  />
-  <p>And the systemd path, run from an unpacked, verified release tarball:</p>
-  <Cmd label="systemd" wrap command="sha256sum -c SHA256SUMS && ./packaging/install.sh" />
+  <Cmd label="shell" wrap command="sudo sh install.sh" />
   <p>
-    The container is also the answer to the next section: it is the isolation boundary karucode
-    itself does not provide.
+    Your workspace, service user, port and data directory live in a drop-in
+    (<code>/etc/systemd/system/karucode.service.d/10-install.conf</code>) that every run rewrites from
+    what it finds, so an upgrade cannot lose the paths the service needs. Pin a version with
+    <code>--version 0.1.0</code>, or leave it on <code>latest</code>.
   </p>
 
   <h2 id="exposing-it">Exposing it</h2>
   <Callout kind="danger" title="Not for a public interface as-is">
     <p>
       karucode binds to <code>127.0.0.1</code> by default and refuses a non-loopback bind unless
-      <code>KARUCODE_AUTH_TOKEN</code> is set to at least 16 characters. There is no TLS in the
-      binary: put a reverse proxy in front of it for remote access.
+      <code>KARUCODE_AUTH_TOKEN</code> is set (16+ characters) or sign-in is enabled with a
+      password or passkey. Sign-in is strongly recommended before the UI leaves loopback. There is
+      no TLS in the binary: put a reverse proxy in front of it for remote access.
     </p>
     <p>
       Shell commands run as the server user and are not sandboxed. If the workspace is untrusted, run

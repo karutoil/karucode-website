@@ -12,8 +12,8 @@ the karucode repository (`README.md`, `reports/bench.md`, `docs/SECURITY.md`,
 | Name | `karucode` — one word, lowercase, no space, no camel case, never `K` or `KaruCode` |
 | Tagline (short, canonical) | One binary, not a stack. |
 | Hero headline | A coding agent that is one binary, not a stack. |
-| Positioning | Minimal, not bloated. The claim is measured: 10.5 MiB binary, 10.2 MiB idle RSS, one SQLite file. "Self-hosted" is true but no longer differentiating — keep it as a fact, never as the headline. |
-| Facts line | 10.5 MiB binary · 10.2 MiB idle RSS · one SQLite file · no Node at runtime |
+| Positioning | Minimal, not bloated. The claim is measured: 27.9 MiB binary, 19.2 MiB idle RSS, one SQLite file. "Self-hosted" is true but no longer differentiating — keep it as a fact, never as the headline. |
+| Facts line | 27.9 MiB binary · 19.2 MiB idle RSS · one SQLite file · no Node at runtime |
 | Licence | MIT |
 | Language | Rust 1.89+ |
 | Repo | https://github.com/karutoil/karucode |
@@ -33,23 +33,25 @@ all from this file, so an edit can be checked against its source:
 | `model` | `any OpenAI-compatible endpoint` | provider |
 | `tools` | `read · search · edit · shell · git · mcp` | tools + MCP |
 | `state` | `one SQLite file, WAL mode` | architecture |
-| `budget` | `10,200 turns · 24 h wall clock` | `(max_continues + 1) × max_iterations` |
-| ready line | `ready in 7.9 ms · 10.2 MiB rss` | bench: cold start average, idle RSS |
+| `budget` | `no turn ceiling · 24 h wall clock` | `max_iterations = 0`, `max_run_secs = 86400` |
+| ready line | `ready in 37 ms · 19.2 MiB rss` | bench: cold-start average, idle RSS |
 
 Do not add a row that is not in this table; the card is a claim about the running
 product, not decoration.
 
 ## What it does
 
-- **Adjective-free summary:** a coding agent, delivered as one 10.5 MiB Rust binary that
-  embeds its own UI and keeps all state in one SQLite file. Nothing else to deploy.
+- **Adjective-free summary:** a coding agent, delivered as one 27.9 MiB Rust binary that
+  embeds its own UI (fonts and all) and keeps all state in one SQLite file. Nothing else to
+  deploy.
 - Reads your project, searches it, edits files, runs commands with streamed output,
   inspects git, delegates to subagents, and keeps going through multi-step tasks until
   the work is done or you stop it.
-- **Long-horizon runs.** The iteration budget belongs to a *segment*. When it runs out
-  mid-task the runtime refreshes it and continues in the same session, run and
-  transcript. Ceiling ≈ `(max_continues + 1) × max_iterations` = **10,200 turns** with
-  the defaults, or a **24 h** wall clock, whichever comes first.
+- **Long-horizon runs.** `limits.max_iterations` defaults to **0 = no turn ceiling**. A
+  run ends when the work is done, when it is cancelled, at `max_run_secs` (**24 h**), or
+  when the loop guard catches it repeating calls with no workspace change. No segment,
+  no continuation turn, no `[runtime checkpoint]` injected into the transcript. A
+  non-zero `max_iterations` is an optional backstop that ends the run `limit_reached`.
 - **Real side effects.** Every tool result is bounded with an explicit truncation
   marker — never silently dropped.
 - **Approvals before mutations.** `ask` is the default for shell and writes.
@@ -78,8 +80,11 @@ karucode — one Rust binary
 
 Read, search, write and edit files; run shell commands with streamed output in their
 own process group; inspect git; spawn subagents; read karucode's own documentation.
-Tool execution within a turn is **sequential**, deliberately, for deterministic
-approvals and events.
+Independent tool calls **run in parallel** by default (`limits.parallel_tool_calls =
+true`): reads, listings, searches and git inspections, plus disjoint file writes when the
+policy would not ask. Anything the runtime cannot prove independent — `run_command`,
+plugins, MCP, subagents, `note`, and any call that would park on an approval — runs in
+call order. Results are folded into the transcript in call order either way.
 
 ## Approvals
 
@@ -117,14 +122,24 @@ approvals and events.
 
 ## Plugins and MCP
 
-- Plugins are separate processes (not Wasm), namespaced; no filesystem sandbox and no
-  hot reload of a changed binary.
+- Plugins are separate processes (not Wasm), namespaced, with no filesystem sandbox. A
+  rebuilt plugin is picked up by a reload — `POST /api/plugins/reload`,
+  `POST /api/plugins/:name/reload`, or `plugins_watch` (off by default) — not by a server
+  restart.
 - MCP supports stdio and streamable HTTP; tools only — resources and prompts are not
   surfaced. Legacy SSE-only transport is not implemented.
 
 ## Security posture
 
-- Binds to loopback by default; a non-loopback bind requires an auth token (≥16 chars).
+- Binds to loopback by default; a non-loopback bind requires an auth token (≥16 chars)
+  **or** `[access] enabled` backed by a real password/passkey.
+- Web sign-in: password (Argon2id, constant-time) or passkey (ES256/WebAuthn), exchanged
+  for an `HttpOnly`, `SameSite=Lax` session cookie; the server stores only the SHA-256 of
+  the session token. Eight wrong attempts from one address in 15 minutes lock it out for
+  five. Passkeys verify challenge, origin, RP id, user-present and counter; attestation is
+  not verified. `[access]` holds only policy (enabled, public_url, session_days, tunnel,
+  trusted_proxies); the credentials live in SQLite and are set by the wizard or Settings.
+- The first-run wizard takes model endpoint, appearance, approval mode and access.
 - DNS-rebinding defence: with a loopback bind and no token, only `127.0.0.1`,
   `localhost` and `[::1]` Hosts are served. `KARUCODE_ALLOWED_HOSTS` extends the list.
 - Browser clients are CSRF-protected: a custom header plus the Origin/Host check.
@@ -145,11 +160,15 @@ concurrent runs.
 
 | Metric | Value |
 | --- | --- |
-| Cold start | **7.9 ms** average (10.1 / 5.7 across runs) |
-| Idle RSS | **10.2 MiB** average |
-| Peak RSS, 3 concurrent runs | **12.4 MiB** |
-| Binary size | **10.5 MiB** |
-| 3 concurrent runs, wall time | 158.9 ms |
+| Cold start | **37.4 ms** average (37.5 / 38.1 / 36.6 across three runs) |
+| Idle RSS | **19.2 MiB** average |
+| Peak RSS, 3 concurrent runs | **28.0 MiB** |
+| Binary size | **27.9 MiB** (the whole UI and its fonts are embedded) |
+| 3 concurrent runs, wall time | 266 ms |
+
+Re-measured 2026-11-09 at commit 33629c9 with `scripts/bench.py` (release profile,
+`strip = true`, `lto = "thin"`), because the UI grew to 7.6 MB of embedded assets and the
+old 10.5 MiB / 7.9 ms / 10.2 MiB figures no longer describe the binary.
 
 Always show these with the caveat: numbers are specific to that host and to the mock
 provider; RSS during a real run also depends on the provider TLS stack and response
@@ -178,8 +197,8 @@ sizes. Never present them as a guarantee or a comparison.
 | `KARUCODE_MODEL` | `gpt-4o-mini` | model id |
 | `KARUCODE_APPROVAL_MODE` | `ask` | `ask`, `ask_commands`, `auto`, `read_only` |
 | `KARUCODE_ALLOW_COMMANDS` | empty | command prefixes that are never prompted for |
-| `KARUCODE_MAX_ITERATIONS` | `200` | model turns per segment |
-| `KARUCODE_MAX_CONTINUES` | `50` | budget refreshes per run |
+| `KARUCODE_MAX_ITERATIONS` | `0` | turns per run; `0` = no ceiling |
+| `KARUCODE_PARALLEL_TOOL_CALLS` | `true` | run provably independent tool calls at once |
 | `KARUCODE_MAX_RUN_SECS` | `86400` | hard wall clock for a whole run |
 | `KARUCODE_COMMAND_TIMEOUT_SECS` | `120` | default shell timeout |
 | `KARUCODE_MAX_TOOL_OUTPUT_BYTES` | `24000` | tool result bytes kept for the model |
@@ -189,24 +208,49 @@ sizes. Never present them as a guarantee or a comparison.
 | `KARUCODE_ALLOW_RECURSIVE_SUBAGENTS` | `false` | nested delegation |
 | `KARUCODE_LOG` | `info` | tracing filter, e.g. `info,karucode=debug` |
 | `KARUCODE_ALLOWED_HOSTS` | empty | extra `Host` names for the loopback guard |
+| `KARUCODE_ACCESS_ENABLED` | `false` | require a password or passkey for the web UI |
+| `KARUCODE_PUBLIC_URL` | unset | the address people type; added to the Host allowlist |
+| `KARUCODE_SESSION_DAYS` | `30` | how long a browser stays signed in (1..365) |
+| `KARUCODE_TUNNEL` | `none` | `none`, `cloudflare` or `custom` |
+| `KARUCODE_TRUSTED_PROXIES` | empty | comma-separated CIDRs whose forwarded headers are believed |
 
-## Install paths (real commands only)
+## Install path (there is one)
+
+The release is a prebuilt binary. `packaging/install.sh` is the only install method, and
+the three forms below are the same script:
 
 ```bash
-git clone https://github.com/karutoil/karucode && cd karucode
-export KARUCODE_BASE_URL=http://127.0.0.1:4000/v1   # your gateway
-export KARUCODE_API_KEY=sk-...                     # if the gateway needs one
-export KARUCODE_MODEL=gpt-4o-mini
-cargo run --release -p kc-server -- --workspace /path/to/your/project
+# service install (needs root): binary + hardened unit, enabled and started
+curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
+sudo sh install.sh --workspace /srv/karucode/workspace
+
+# binary only, no root, no systemd
+sh install.sh --prefix "$HOME/.local" --no-systemd
+
+# upgrade = re-run it (or pin a release)
+sudo sh install.sh
+sudo sh install.sh --version 0.1.0
 ```
 
-Then open <http://127.0.0.1:8787>. `cargo build` also builds and embeds the frontend,
-so that is the whole build. Prerequisites: Linux, Rust 1.89+, Node 22.12+ **only to
-build the frontend**. Optional: ripgrep (a pure-Rust fallback is built in) and git.
+What it does, and what may be claimed about it:
 
-Container and systemd installs live under `packaging/` in the repo. There is no hosted
-service, no pricing, no signup. **There is no `curl | bash` installer** — do not invent
-one. Do not write a download button that goes nowhere.
+- Downloads `karucode-<version>-x86_64-unknown-linux-gnu.tar.gz`, verifies it against the
+  release's `SHA256SUMS`, and only then unpacks. **Nothing is piped into a shell** — do not
+  write `curl | bash` anywhere.
+- Installs to `<prefix>/bin/karucode`, keeping the previous binary as `karucode.old`.
+- Runs as the account that ran the installer (`$SUDO_USER`, then `$LOGNAME`, then the
+  session login uid); never root, never a newly created account.
+- Writes site paths to `/etc/systemd/system/karucode.service.d/10-install.conf` so
+  re-running it for an upgrade cannot lose them. `20-local.conf` is yours.
+- Reports success only once `/api/health` answers; on failure the previous unit, drop-in
+  and binary are restored (exit 2).
+- `--dry-run` prints the plan and changes nothing.
+
+Release shape: one target, `x86_64-unknown-linux-gnu`, produced by the `release` job on a
+`v*` tag, with the version taken from the tag and required to match `Cargo.toml`.
+Prerequisites for this path: Linux x86_64, `curl`, `sh`, and systemd (or `--no-systemd`).
+**Rust 1.89+ and Node 22.12+ are only needed to build from source** — a contributor
+workflow, not an install path, and not something the website should offer.
 
 ## Known limitations — state these plainly
 
@@ -214,11 +258,13 @@ one. Do not write a download button that goes nowhere.
   untrusted code or unattended `auto` mode.
 - **Subagents share the live workspace**, including dirty and untracked files;
   `owned_paths` is advisory, not locking.
-- **Sequential tool execution** within a turn.
+- **Ordered side effects**: shell, plugins, MCP and subagents run in call order; only
+  provably independent calls run in parallel.
 - **MCP**: stdio and streamable HTTP only; tools only.
-- **Plugins** are processes, not Wasm: no filesystem sandbox, no hot reload.
+- **Plugins** are processes, not Wasm: no filesystem sandbox; a rebuilt plugin needs a
+  reload (`plugins_watch`, off by default) rather than a restart.
 - **Providers are install-wide, not per project.**
-- **No built-in TLS** — use a reverse proxy.
+- **No built-in TLS** — use a reverse proxy (or a Cloudflare Tunnel; `[access] tunnel`).
 - **Compaction is trimming**, not model-assisted summarisation.
 - Token accounting is whatever the provider reports; absent usage is shown as unknown.
 

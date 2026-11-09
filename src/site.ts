@@ -8,9 +8,9 @@ export const SITE = {
   /** The canonical origin. Four files carry it — see README, "Deploy". */
   url: 'https://code.karutoil.site',
   tagline: 'One binary, not a stack.',
-  facts: '10.5 MiB binary · 10.2 MiB idle RSS · one SQLite file · no Node at runtime',
+  facts: '27.9 MiB binary · 19.2 MiB idle RSS · one SQLite file · no Node at runtime',
   description:
-    'karucode is a coding agent that is one 10.5 MiB Rust binary, not a stack: 10.2 MiB idle RSS, one SQLite file for state, any OpenAI-compatible endpoint, approvals before every mutation, and a transcript that survives a restart.',
+    'karucode is a coding agent that is one 27.9 MiB Rust binary, not a stack: 19.2 MiB idle RSS, one SQLite file for state, any OpenAI-compatible endpoint, approvals before every mutation, and a transcript that survives a restart.',
   repo: 'https://github.com/karutoil/karucode',
   license: 'MIT',
   licenseUrl: 'https://github.com/karutoil/karucode/blob/main/LICENSE',

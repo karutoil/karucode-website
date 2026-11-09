@@ -17,10 +17,10 @@ import { SITE } from '../../site';
     <div class="coda__copy reveal">
       <p class="label coda__label">Ready when you are</p>
       <h2 class="h1 coda__title" id="coda-title">
-        Ten megabytes. One file.<br />Your machine.
+        One binary. One file.<br />Your machine.
       </h2>
       <p class="lede coda__lede">
-        Build it, point it at a project, and the UI is already inside the binary. Nothing
+        Install it, point it at a project, and the UI is already inside the binary. Nothing
         to provision, and nothing to keep in sync.
       </p>
       <div class="coda__cta">
@@ -36,11 +36,12 @@ import { SITE } from '../../site';
         class="coda__cmd"
         label="shell"
         wrap
-        command="cargo run --release -p kc-server -- --workspace /path/to/your/project"
+        command={`curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
+sudo sh install.sh --workspace /srv/karucode/workspace`}
       />
       <dl class="coda__facts">
-        <div><dt>binary</dt><dd>10.5 MiB</dd></div>
-        <div><dt>idle rss</dt><dd>10.2 MiB</dd></div>
+        <div><dt>binary</dt><dd>27.9 MiB</dd></div>
+        <div><dt>idle rss</dt><dd>19.2 MiB</dd></div>
         <div><dt>state</dt><dd>one SQLite file</dd></div>
         <div><dt>licence</dt><dd>{SITE.license}</dd></div>
       </dl>

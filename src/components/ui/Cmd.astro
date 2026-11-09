@@ -12,9 +12,26 @@ interface Props {
 }
 
 const { command, prompt = '$', label, wrap = false, class: className = '' } = Astro.props;
+
+/**
+ * A command with more than one line is more than one command — an install is a
+ * download and then a run. Each line gets its own prompt, and a line that wraps
+ * (a long URL) continues under itself rather than under the prompt.
+ */
+const lines = command.split('\n');
+
+/**
+ * URLs are the long words here, and an arbitrary wrap lands mid-word
+ * (`…/packaging/ins` / `tall.sh`). Insert a <wbr> after each slash so the break
+ * happens where a URL naturally breaks. It adds no characters to the copied
+ * text — the copy path reads `data-cmd-value`, not the DOM.
+ */
+const escape = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const withBreaks = (line: string) => escape(line).replace(/\/(?=[^\s])/g, '/<wbr>');
 ---
 
-<div class:list={['cmd', className]} data-cmd>
+<div class:list={['cmd', className]} data-cmd data-cmd-value={command}>
   <div class="cmd__bar">
     {label && <span class="cmd__label mono">{label}</span>}
     <button class="cmd__copy" type="button" data-cmd-copy aria-label={`Copy: ${command}`}>
@@ -25,7 +42,14 @@ const { command, prompt = '$', label, wrap = false, class: className = '' } = As
       </svg>
     </button>
   </div>
-  <pre class:list={['cmd__line', { 'cmd__line--wrap': wrap }]}><span class="cmd__prompt" aria-hidden="true">{prompt}</span><code>{command}</code></pre>
+  <pre class:list={['cmd__line', { 'cmd__line--wrap': wrap }]}>{
+    lines.map((line) => (
+      <span class="cmd__row">
+        <span class="cmd__prompt" aria-hidden="true">{line ? prompt : ''}</span>
+        <code set:html={withBreaks(line)} />
+      </span>
+    ))
+  }</pre>
 </div>
 
 <script>
@@ -36,8 +60,10 @@ const { command, prompt = '$', label, wrap = false, class: className = '' } = As
     if (!btn || !code) return;
 
     btn.addEventListener('click', async () => {
+      // copy the whole command, not just the line a `code` element holds
+      const value = root.dataset.cmdValue ?? code.textContent ?? '';
       try {
-        await navigator.clipboard.writeText(code.textContent ?? '');
+        await navigator.clipboard.writeText(value);
       } catch {
         // clipboard can be blocked (insecure origin, permissions); the command is selectable anyway
         const range = document.createRange();
@@ -110,8 +136,7 @@ const { command, prompt = '$', label, wrap = false, class: className = '' } = As
   }
 
   .cmd__line {
-    display: flex;
-    gap: 0.7ch;
+    display: grid;
     margin: 0;
     padding: 14px 16px;
     font-family: var(--kc-font-mono);
@@ -131,12 +156,20 @@ const { command, prompt = '$', label, wrap = false, class: className = '' } = As
     overflow-wrap: anywhere;
   }
 
+  .cmd__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.7ch;
+  }
+
   .cmd__line code {
     font: inherit;
     background: none;
     padding: 0;
     color: inherit;
     white-space: inherit;
+    /* a wrapped continuation line starts at the code column, under the URL */
+    overflow-wrap: inherit;
   }
 
   .cmd__prompt {

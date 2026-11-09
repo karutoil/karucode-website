@@ -1,6 +1,6 @@
 # AGENTS.md — karucode website
 
-The marketing site for karucode: a coding agent that is one 10.5 MiB Rust binary,
+The marketing site for karucode: a coding agent that is one 27.9 MiB Rust binary,
 not a stack. Static site, no server, deployed to Cloudflare Pages.
 
 **Positioning, decided by the user:** "self-hosted coding agent" is now generic — every
@@ -82,6 +82,14 @@ Reference points, and what we are taking from each:
    `prefers-reduced-motion` — when in doubt, render the final state immediately.
 9. **Density.** Use the page width. Big type, generous whitespace, hairline dividers.
    Avoid the generic "row of three identical rounded cards with an emoji icon".
+
+### One install path
+
+`packaging/install.sh` is the only install method the site documents: download it with
+`curl -fsSLO`, then `sudo sh install.sh`. No `curl | sh`, no `docker build`, no
+`cargo run`, no "build from source" tab — those exist in the repo for contributors and
+the site is not a contributor guide. `docs/FACTS.md` records the exact commands; if one
+of them changes in the repository, it changes there first.
 
 ### Responsive rules
 

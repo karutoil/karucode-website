@@ -2,26 +2,30 @@
 /**
  * 04 — Performance.
  * A stat band, not a card grid: the numbers are the argument, so they get the
- * type. One small honest chart of the two cold-start samples, and the caveat
- * always visible underneath. Never a comparison.
+ * type. One small honest chart of resident memory idle vs under load, and the
+ * caveat always visible underneath. Never a comparison.
+ *
+ * The chart used to plot two cold-start samples. Once startup settled at ~37 ms
+ * in both runs the bars were the same length and the average marker said
+ * nothing, so it plots the memory ladder instead: the same measurement the
+ * RSS stats come from, showing that it grows with work and stays small.
  */
 import SectionHead from '../ui/SectionHead.astro';
 
 const STATS = [
-  { value: '7.9', unit: 'ms', label: 'Cold start', note: 'average of 10.1 / 5.7' },
-  { value: '10.2', unit: 'MiB', label: 'Idle RSS', note: 'sampled after 3 s idle' },
-  { value: '12.4', unit: 'MiB', label: 'Peak RSS', note: 'with 3 concurrent runs' },
-  { value: '10.5', unit: 'MiB', label: 'Binary', note: 'strip + thin LTO' },
-  { value: '158.9', unit: 'ms', label: '3 runs, wall', note: 'three concurrent runs' },
+  { value: '37.4', unit: 'ms', label: 'Cold start', note: 'average of 37.5 / 38.1 / 36.6' },
+  { value: '19.2', unit: 'MiB', label: 'Idle RSS', note: 'sampled after 3 s idle' },
+  { value: '28.0', unit: 'MiB', label: 'Peak RSS', note: 'with 3 concurrent runs' },
+  { value: '27.9', unit: 'MiB', label: 'Binary', note: 'UI embedded, strip + thin LTO' },
+  { value: '266', unit: 'ms', label: '3 runs, wall', note: 'three concurrent runs' },
 ];
 
-// two cold-start samples: 10.1 ms and 5.7 ms, average 7.9 ms
-const RUNS = [
-  { label: 'run 1', ms: 10.1 },
-  { label: 'run 2', ms: 5.7 },
+// resident memory, MiB: idle, then with three runs streaming
+const MEM = [
+  { label: 'idle', mib: 19.2 },
+  { label: '3 runs', mib: 28.0 },
 ];
-const MAX = Math.max(...RUNS.map((r) => r.ms));
-const AVG = 7.9;
+const MAX = Math.max(...MEM.map((r) => r.mib));
 ---
 
 <section class="section section--divided" id="performance" aria-labelledby="performance-head">
@@ -30,7 +34,7 @@ const AVG = 7.9;
       <SectionHead
         num="04"
         kicker="Performance"
-        title="Ten megabytes of binary, twelve megabytes of RSS."
+        title="Twenty-eight megabytes on disk, nineteen in memory."
         lede="Measured on one host with a local mock provider — cold start polled on /api/health, RSS sampled after three seconds idle and during three concurrent runs."
         id="performance-head"
       />
@@ -55,32 +59,33 @@ const AVG = 7.9;
 
     <div class="perf__foot">
       <figure class="chart">
-        <figcaption class="chart__cap mono">Cold start — two runs, polled on <span>/api/health</span></figcaption>
+        <figcaption class="chart__cap mono">
+          Resident memory — idle, then three runs streaming
+        </figcaption>
         <div class="chart__plot">
           <div class="chart__rows">
             {
-              RUNS.map((r) => (
+              MEM.map((r) => (
                 <div class="chart__row">
                   <span class="chart__label mono">{r.label}</span>
                   <span class="chart__track">
-                    <span class="chart__bar" style={`--w:${((r.ms / MAX) * 100).toFixed(1)}%`} />
+                    <span class="chart__bar" style={`--w:${((r.mib / MAX) * 100).toFixed(1)}%`} />
                   </span>
-                  <span class="chart__val mono">{r.ms.toFixed(1)}</span>
+                  <span class="chart__val mono">{r.mib.toFixed(1)}</span>
                 </div>
               ))
             }
           </div>
-          <span class="chart__avg" aria-hidden="true" />
         </div>
         <div class="chart__axis mono" aria-hidden="true">
           <span>0</span>
-          <span>{MAX.toFixed(1)} ms</span>
+          <span>{MAX.toFixed(1)} MiB</span>
         </div>
-        <span class="chart__avgkey mono">avg {AVG.toFixed(1)} ms</span>
       </figure>
 
       <p class="caveat mono">
         Host: AMD Ryzen 7 3700X, Linux 6.12, rustc 1.96, release build with strip + thin LTO.
+        The binary embeds the whole web UI and its fonts; that is why most of it is not agent code.
         Numbers are specific to this host and to the mock provider; RSS during a real run also
         depends on the provider TLS stack and response sizes. No memory target is promised.
       </p>
@@ -212,10 +217,6 @@ const AVG = 7.9;
     text-transform: none;
   }
 
-  .chart__plot {
-    position: relative;
-  }
-
   .chart__rows {
     display: grid;
     gap: 10px;
@@ -223,7 +224,8 @@ const AVG = 7.9;
 
   .chart__row {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 62px;
+    /* wide enough for the two-word label "3 runs"; at 44px it broke into "3"/"RUNS" */
+    grid-template-columns: 58px minmax(0, 1fr) 62px;
     gap: 10px;
     align-items: center;
   }
@@ -258,20 +260,9 @@ const AVG = 7.9;
     text-align: right;
   }
 
-  /* the average, marked — the one gold thing in the section */
-  .chart__avg {
-    position: absolute;
-    top: -2px;
-    bottom: -2px;
-    left: calc(44px + 10px + (100% - 126px) * 0.782);
-    width: 1px;
-    border-left: 1px dashed var(--accent);
-    pointer-events: none;
-  }
-
   .chart__axis {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 62px;
+    grid-template-columns: 58px minmax(0, 1fr) 62px;
     gap: 10px;
     font-size: 0.6875rem;
     color: var(--text-3);
@@ -283,13 +274,6 @@ const AVG = 7.9;
 
   .chart__axis span:last-child {
     text-align: right;
-  }
-
-  .chart__avgkey {
-    font-size: 0.6875rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--accent);
   }
 
   .caveat {

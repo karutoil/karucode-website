@@ -7,6 +7,7 @@ const TOC = [
   { id: 'what-is-contained', label: 'What is contained' },
   { id: 'what-is-not', label: 'What is not' },
   { id: 'reaching-it-from-another-machine', label: 'Reaching it from another machine' },
+  { id: 'signing-in', label: 'Signing in' },
   { id: 'in-the-browser', label: 'In the browser' },
   { id: 'what-the-model-cannot-take-with-it', label: 'What the model cannot take with it' },
   { id: 'rendered-content', label: 'Rendered content' },
@@ -68,7 +69,8 @@ const TOC = [
   <ul>
     <li>
       <strong>Plugins and MCP servers are trusted code.</strong> They are separate processes with no
-      filesystem sandbox, and a changed plugin binary needs a restart — there is no hot reload.
+      filesystem sandbox. A rebuilt plugin is reloaded — <code>POST /api/plugins/reload</code> or
+      <code>plugins_watch</code> — not restarted with the server.
     </li>
     <li>
       <strong>Subagents share the parent’s live workspace</strong>, including dirty and untracked
@@ -84,8 +86,9 @@ const TOC = [
   <h2 id="reaching-it-from-another-machine">Reaching it from another machine</h2>
   <p>
     By default the server binds to <code>127.0.0.1</code>. A non-loopback bind is refused unless
-    <code>KARUCODE_AUTH_TOKEN</code> is set to at least 16 characters — the bind, not the request, is
-    what needs the token.
+    <code>KARUCODE_AUTH_TOKEN</code> is set to at least 16 characters, or <code>[access]</code> is
+    enabled and backed by a real password or passkey — the bind, not the request, is what needs
+    the credential.
   </p>
   <p>
     <code>KARUCODE_ALLOWED_HOSTS</code> extends the <code>Host</code> allowlist. An entry can be an
@@ -108,7 +111,7 @@ const TOC = [
           <td>unset</td>
           <td>
             Only the Hosts <code>127.0.0.1</code>, <code>localhost</code> and <code>[::1]</code>, plus
-            anything in <code>KARUCODE_ALLOWED_HOSTS</code>.
+            anything in <code>KARUCODE_ALLOWED_HOSTS</code> or <code>[access] public_url</code>.
           </td>
         </tr>
         <tr>
@@ -121,7 +124,7 @@ const TOC = [
         <tr>
           <td>non-loopback</td>
           <td>unset</td>
-          <td>The bind is refused.</td>
+          <td>The bind is refused, unless sign-in is enabled with a password or passkey.</td>
         </tr>
         <tr>
           <td>non-loopback</td>
@@ -137,17 +140,60 @@ const TOC = [
     it.
   </p>
 
+  <h2 id="signing-in">Signing in</h2>
+  <p>
+    A bearer token is awkward in a browser: a page cannot put a header on the document that runs the
+    app. So the web UI has its own sign-in — a <strong>password</strong> or a
+    <strong>passkey</strong> — exchanged for an <code>HttpOnly</code> session cookie. Both work
+    alongside the token; neither replaces it.
+  </p>
+  <ul>
+    <li>
+      <strong>Password:</strong> hashed with Argon2id, verified in constant time. Only the hash is
+      stored, in the SQLite settings table — never in the config file, never in
+      <code>GET /api/config</code>.
+    </li>
+    <li>
+      <strong>Sessions:</strong> 32 random bytes in the cookie; the server stores only the SHA-256,
+      so a copy of the database cannot be turned into a login. <code>SameSite=Lax</code>,
+      <code>HttpOnly</code>, and <code>Secure</code> when the request arrived over TLS. Signing out
+      deletes the row.
+    </li>
+    <li>
+      <strong>Lockout:</strong> eight wrong attempts from one address within 15 minutes lock that
+      address out for five minutes — including the correct password.
+    </li>
+    <li>
+      <strong>Passkeys:</strong> ES256 only (RSA and Ed25519 are refused at registration). The
+      challenge, origin, relying-party id, user-present flag and signature counter are all checked;
+      the attestation statement is not, so Touch ID, Windows Hello, a phone and a YubiKey all work.
+    </li>
+    <li>
+      <strong>Behind a proxy:</strong> only the direct peer is compared against
+      <code>trusted_proxies</code>, so a client cannot claim to be loopback by sending
+      <code>X-Forwarded-For</code>. <code>tunnel = "cloudflare"</code> trusts Cloudflare’s published
+      ranges.
+    </li>
+  </ul>
+  <p>
+    The first-run wizard sets this up in one step: model endpoint, approval mode, and the
+    password or passkey. A passkey is bound to the host it was registered on, so set
+    <code>public_url</code> before registering the one you plan to use remotely.
+  </p>
+
   <h2 id="in-the-browser">In the browser</h2>
   <ul>
     <li>
       <strong>CSRF:</strong> browser clients are protected by a custom header plus the
-      <code>Origin</code>/<code>Host</code> check. A cross-site form post can set neither the header
-      nor a matching Origin.
+      <code>Origin</code>/<code>Host</code> check — and, once sign-in is on, by a
+      <code>SameSite=Lax</code> session cookie. A cross-site form post can set none of them.
     </li>
     <li>
       <strong>DNS rebinding:</strong> with a loopback bind and no token, only <code>127.0.0.1</code>,
-      <code>localhost</code> and <code>[::1]</code> Hosts are served, so a hostile domain that
-      resolves to your machine is still rejected by name.
+      <code>localhost</code> and <code>[::1]</code> Hosts are served (plus your explicit allowlist and
+      <code>[access] public_url</code>), so a hostile domain that resolves to your machine is still
+      rejected by name. The guard is <em>not</em> skipped when sign-in is enabled: a cookie, unlike a
+      bearer header, is sent automatically.
     </li>
     <li>
       <strong>Secrets:</strong> never returned to the browser and never written to logs. The provider
@@ -184,8 +230,9 @@ const TOC = [
   <h2 id="before-you-expose-it">Before you expose it</h2>
   <ol>
     <li>
-      Set <code>KARUCODE_AUTH_TOKEN</code> to at least 16 characters. Without it, a non-loopback bind
-      is refused.
+      Put a credential in front of it: <code>KARUCODE_AUTH_TOKEN</code> of at least 16 characters, or
+      a password/passkey with <code>[access] enabled</code>. Without one, a non-loopback bind is
+      refused.
     </li>
     <li>
       Set <code>KARUCODE_ADMIN_TOKEN</code>, so changing approvals or the endpoint needs a second

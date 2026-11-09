@@ -7,6 +7,7 @@ const TOC = [
   { id: 'precedence', label: 'Precedence' },
   { id: 'environment-variables', label: 'Environment variables' },
   { id: 'limits', label: 'Limits' },
+  { id: 'access', label: 'Web-UI access' },
   { id: 'providers', label: 'Providers' },
   { id: 'plugins-and-mcp', label: 'Plugins and MCP' },
   { id: 'approvals', label: 'Approvals' },
@@ -16,7 +17,7 @@ const ENV = [
   {
     names: ['KARUCODE_HOST', 'KARUCODE_PORT'],
     def: '127.0.0.1 / 8787',
-    meaning: 'bind address; a non-loopback bind needs a token',
+    meaning: 'bind address; a non-loopback bind needs a token or sign-in',
   },
   { names: ['KARUCODE_WORKSPACE'], def: 'cwd', meaning: 'default workspace root' },
   {
@@ -65,9 +66,13 @@ const ENV = [
     def: 'empty',
     meaning: 'command prefixes that are never prompted for',
   },
-  { names: ['KARUCODE_MAX_ITERATIONS'], def: '200', meaning: 'model turns per segment' },
-  { names: ['KARUCODE_MAX_CONTINUES'], def: '50', meaning: 'budget refreshes per run' },
+  { names: ['KARUCODE_MAX_ITERATIONS'], def: '0', meaning: 'turns per run; 0 = no ceiling' },
   { names: ['KARUCODE_MAX_RUN_SECS'], def: '86400', meaning: 'hard wall clock for a whole run' },
+  {
+    names: ['KARUCODE_PARALLEL_TOOL_CALLS'],
+    def: 'true',
+    meaning: 'run independent tool calls at once',
+  },
   { names: ['KARUCODE_COMMAND_TIMEOUT_SECS'], def: '120', meaning: 'default shell timeout' },
   {
     names: ['KARUCODE_MAX_TOOL_OUTPUT_BYTES'],
@@ -103,6 +108,22 @@ const ENV = [
     names: ['KARUCODE_ALLOWED_HOSTS'],
     def: 'empty',
     meaning: 'extra Host names for the loopback guard',
+  },
+  {
+    names: ['KARUCODE_ACCESS_ENABLED'],
+    def: 'false',
+    meaning: 'require a password or passkey to open the UI',
+  },
+  {
+    names: ['KARUCODE_PUBLIC_URL'],
+    def: 'unset',
+    meaning: 'the address people type; added to the Host allowlist',
+  },
+  { names: ['KARUCODE_SESSION_DAYS'], def: '30', meaning: 'how long a browser stays signed in' },
+  {
+    names: ['KARUCODE_TUNNEL'],
+    def: 'none',
+    meaning: 'none, cloudflare or custom — which proxy is believed',
   },
 ];
 
@@ -193,32 +214,55 @@ const MODES = [
 
   <h2 id="limits">Limits</h2>
   <p>
-    The limits block is where a long run is defined. These four values are the defaults they replace:
+    A run is not cut off by a turn counter. <code>max_iterations</code> defaults to
+    <code>0</code> — no ceiling — so a long task is not interrupted and no continuation turn is
+    injected into the transcript to restart it:
   </p>
   <pre class="code">{`[limits]
-max_iterations = 200
-max_run_secs = 86400
-auto_continue = true
-max_continues = 50`}</pre>
+max_iterations = 0        # 0 = no turn ceiling (the default)
+max_run_secs = 86400      # hard wall clock for the whole run, 24 h
+parallel_tool_calls = true`}</pre>
   <ul>
     <li>
-      <code>max_iterations</code> — model turns allowed in a single segment, before the budget is
-      refreshed.
-    </li>
-    <li><code>max_continues</code> — how many times the budget may be refreshed in one run.</li>
-    <li>
-      <code>auto_continue</code> — refresh the budget and keep going instead of stopping when a
-      segment runs out.
+      <code>max_iterations</code> — turns allowed in one run. <code>0</code> means the run ends when
+      the work is done, when you cancel it, at the wall clock, or when the loop guard catches it
+      re-issuing calls with no workspace change. A non-zero value is a blunt backstop: the run stops
+      with <code>limit_reached</code> and says so.
     </li>
     <li>
       <code>max_run_secs</code> — a hard wall clock for the whole run. <code>86400</code> is 24
       hours.
     </li>
+    <li>
+      <code>parallel_tool_calls</code> — independent calls (reads, searches, disjoint writes) run at
+      once. Anything that can see a sibling’s effects — shell, plugins, MCP, subagents, approvals —
+      still runs in call order, and results are folded into the transcript in call order either way.
+    </li>
   </ul>
   <p>
-    Together they give the ceiling: <code>200 × (50 + 1) = 10,200</code> turns, or 24 hours,
-    whichever comes first. Lower <code>max_continues</code> if you want a run to stop at a size you
-    can read in one sitting.
+    There is no segment and no continuation: a long task is one long task. The wall clock, the
+    cancel button and the loop guard are what end a run.
+  </p>
+
+  <h2 id="access">Web-UI access</h2>
+  <p>
+    Sign-in is a password or a passkey, exchanged for an <code>HttpOnly</code> session cookie. The
+    <em>credentials</em> are not configuration — the password hash and passkeys live in the SQLite
+    settings table and are managed from Settings → Access or the first-run wizard — so
+    <code>[access]</code> holds only the policy:
+  </p>
+  <pre class="code">{`[access]
+enabled = true                               # require sign-in; default false
+public_url = "https://karucode.example.com"  # added to the Host allowlist
+session_days = 30                            # 1..=365
+tunnel = "cloudflare"                        # none | cloudflare | custom
+trusted_proxies = ["10.0.0.0/8"]             # whose forwarded headers are believed`}</pre>
+  <p>
+    Creating the first credential turns sign-in on, so setting a password is the whole switch.
+    <code>enabled = true</code> with no credential is refused: that would leave a login screen nobody
+    can pass. There is deliberately no environment variable for the password — a hash in a unit file
+    ends up in <code>systemctl show</code>. <a href="/security/">Security</a> covers the session and
+    passkey rules.
   </p>
 
   <h2 id="providers">Providers</h2>
@@ -263,8 +307,10 @@ transport = "stdio"`}</pre>
     prompts are not exposed — and the legacy SSE-only transport is not implemented.
   </p>
   <p>
-    Neither kind is sandboxed. A plugin runs with your permissions, and changing its binary needs a
-    restart: there is no hot reload. Read the code before you add it, and see
+    Neither kind is sandboxed. A plugin runs with your permissions. A rebuilt plugin is picked up by
+    a reload rather than a restart: <code>POST /api/plugins/reload</code> rescans,
+    <code>POST /api/plugins/:name/reload</code> replaces one process, and <code>plugins_watch</code>
+    (off by default) does it on a timer. Read the code before you add it, and see
     <a href="/security/">Security</a>.
   </p>
 
