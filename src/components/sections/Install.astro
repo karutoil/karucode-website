@@ -25,15 +25,15 @@ const INSTALLER = 'https://raw.githubusercontent.com/karutoil/karucode/main/pack
 
 const NOTES = [
   {
-    label: 'Verified',
+    label: 'checksum',
     body: 'The tarball is checked against the release SHA256SUMS before anything is unpacked.',
   },
   {
-    label: 'Runs as you',
+    label: 'runs as you',
     body: 'The service runs as the account that ran the installer — never root. A system account only when no human can be identified.',
   },
   {
-    label: 'Then',
+    label: 'next',
     body: 'Open 127.0.0.1:8787: the wizard takes the model endpoint and a password or passkey.',
   },
 ];
@@ -378,16 +378,25 @@ const NOTES = [
 
   .inote {
     display: grid;
-    gap: 4px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 14px;
     padding: 14px 0;
     border-bottom: 1px solid var(--line-soft);
   }
 
+  @media (max-width: 520px) {
+    .inote {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
+    }
+  }
+
   .inote__label {
-    font-size: 0.6875rem;
-    letter-spacing: 0.14em;
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--text-3);
+    color: var(--accent);
+    padding-top: 2px;
   }
 
   .inote__body {

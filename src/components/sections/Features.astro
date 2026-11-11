@@ -43,8 +43,8 @@ const gold =
         </div>
         <h3 class="h3">Long-horizon runs</h3>
         <p class="feat__body">
-          No turn ceiling by default. A run ends when the work is done, when you cancel it, or at
-          the <span class="mono">24 h</span> wall clock — not because a counter ran out.
+          No turn ceiling by default — one measured run went <span class="mono">~10,200 turns</span>
+          before the <span class="mono">24 h</span> wall clock, not a counter, ended it.
         </p>
       </article>
 
@@ -54,10 +54,11 @@ const gold =
             <g style={line}>
               <rect x="3" y="6" width="26" height="20" rx="3"></rect>
               <path d="M3 11h26"></path>
-              <path d="M15 22h9"></path>
+              <path d="M15 18h9"></path>
+              <path d="M20.6 15.4 23 18l-2.4 2.6"></path>
             </g>
             <g style={gold}>
-              <path d="m8 15.5 3.2 3.2L8 21.9"></path>
+              <circle cx="8" cy="18" r="1.6"></circle>
             </g>
           </svg>
           <span class="feat__num">02</span>
@@ -65,7 +66,7 @@ const gold =
         <h3 class="h3">Real tools, real side effects</h3>
         <p class="feat__body">
           Read, search, edit; shell with streamed output in its own process group; git; subagents.
-          Independent calls run in parallel; every result is bounded with a truncation marker.
+          Independent calls run at the same time; every result is bounded with a truncation marker.
         </p>
       </article>
 

@@ -17,18 +17,22 @@ const JOBS = [
 
 const FACTS = [
   {
+    key: 'origin',
     title: 'Same origin',
     body: 'The UI is embedded and served by the same axum process — no CORS, no second static host.',
   },
   {
+    key: 'stream',
     title: 'Streamed by default',
     body: 'REST for requests, SSE for the transcript — output arrives as it is written.',
   },
   {
+    key: 'state',
     title: 'State you can inspect',
     body: 'Projects, sessions, runs and agents in one SQLite database in WAL mode.',
   },
   {
+    key: 'isolate',
     title: 'Out-of-process tools',
     body: 'Plugins and MCP servers are namespaced and supervised: a crash yields a diagnostic, not an outage.',
   },
@@ -105,6 +109,9 @@ const FACTS = [
         {
           FACTS.map((f) => (
             <li class="fact">
+              <span class="fact__key mono" aria-hidden="true">
+                {f.key}
+              </span>
               <h3 class="h3">{f.title}</h3>
               <p class="fact__body">{f.body}</p>
             </li>
@@ -339,21 +346,48 @@ const FACTS = [
     padding: 18px 0;
     border-top: 1px solid var(--line-soft);
     display: grid;
-    gap: 5px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 5px 18px;
   }
 
   .fact:last-child {
     border-bottom: 1px solid var(--line-soft);
   }
 
+  .fact__key {
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+
   .fact h3 {
+    grid-column: 2;
     font-size: 1rem;
   }
 
   .fact__body {
+    grid-column: 2;
     font-size: var(--fs-small);
     line-height: 1.55;
     color: var(--text-2);
     max-width: 42ch;
+  }
+
+  @media (max-width: 520px) {
+    .fact {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 3px;
+    }
+
+    .fact h3,
+    .fact__body {
+      grid-column: 1;
+    }
+
+    .fact__key {
+      padding-top: 0;
+    }
   }
 </style>

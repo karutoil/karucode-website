@@ -26,6 +26,10 @@ const MEM = [
   { label: '3 runs', mib: 28.0 },
 ];
 const MAX = Math.max(...MEM.map((r) => r.mib));
+
+// cold start, ms: three polled runs — the spread is the honest part
+const START = [37.5, 38.1, 36.6];
+const START_AVG = START.reduce((a, b) => a + b, 0) / START.length;
 ---
 
 <section class="section section--divided" id="performance" aria-labelledby="performance-head">
@@ -81,6 +85,30 @@ const MAX = Math.max(...MEM.map((r) => r.mib));
           <span>0</span>
           <span>{MAX.toFixed(1)} MiB</span>
         </div>
+      </figure>
+
+      <figure class="chart">
+        <figcaption class="chart__cap mono">
+          Cold start — three runs, polled on <span>/api/health</span>
+        </figcaption>
+        <div class="chart__dots" role="img" aria-label={`Cold start, three runs: ${START.join(', ')} milliseconds, average ${START_AVG.toFixed(1)} milliseconds.`}>
+          {
+            START.map((ms, i) => (
+              <span class="dot" style={`--x:${((i + 0.5) / START.length) * 100}%; --y:${((ms - 36) / 2.5) * 100}%`}>
+                <span class="dot__val mono">{ms.toFixed(1)}</span>
+              </span>
+            ))
+          }
+          <span class="dot__avg" style={`--y:${((START_AVG - 36) / 2.5) * 100}%`} aria-hidden="true"></span>
+        </div>
+        <div class="chart__axis chart__axis--start mono" aria-hidden="true">
+          <span>run 1</span>
+          <span>run 2</span>
+          <span>run 3</span>
+        </div>
+        <p class="chart__avg mono">
+          avg <span>{START_AVG.toFixed(1)} ms</span> — the spread, not a single number
+        </p>
       </figure>
 
       <p class="caveat mono">
@@ -193,7 +221,7 @@ const MAX = Math.max(...MEM.map((r) => r.mib));
 
   @media (min-width: 900px) {
     .perf__foot {
-      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: clamp(32px, 5vw, 72px);
       align-items: start;
     }
@@ -274,6 +302,65 @@ const MAX = Math.max(...MEM.map((r) => r.mib));
 
   .chart__axis span:last-child {
     text-align: right;
+  }
+
+  /* cold-start scatter: three points, their average, the spread visible */
+  .chart__dots {
+    position: relative;
+    display: block;
+    height: 84px;
+    border-left: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin: 4px 0 2px;
+  }
+
+  .dot {
+    position: absolute;
+    left: var(--x, 50%);
+    bottom: calc(var(--y, 50%) + 8px);
+    width: 7px;
+    height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    border-radius: 50%;
+    background: var(--text-2);
+  }
+
+  .dot__val {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -18px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+
+  .dot__avg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--y, 50%) + 8px);
+    height: 0;
+    border-top: 1px dashed var(--accent);
+  }
+
+  .chart__axis--start {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    text-align: center;
+  }
+
+  .chart__avg {
+    margin: 8px 0 0;
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .chart__avg span {
+    color: var(--accent);
   }
 
   .caveat {

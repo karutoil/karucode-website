@@ -31,3 +31,6 @@ Thumbs.db
 # local preview / verification artefacts
 screenshots/
 *.local
+
+# agent session state (goals, todo) — local, not part of the site
+.karucode/

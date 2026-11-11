@@ -134,30 +134,45 @@ const MODES = [
 
         <ul class="audited">
           <li class="audited__row">
-            <h3 class="side__head label">What else is audited</h3>
-            <p>Allow once, allow for session and deny — every choice is written down.</p>
+            <span class="audited__key mono" aria-hidden="true">every</span>
+            <div>
+              <h3 class="side__head label">What else is audited</h3>
+              <p>Allow once, allow for session and deny — every choice is written down.</p>
+            </div>
           </li>
           <li class="audited__row">
-            <p>
-              Command-prefix allowlists (<span class="mono">KARUCODE_ALLOW_COMMANDS</span>) — prefixes
-              that are never prompted for.
-            </p>
+            <span class="audited__key mono" aria-hidden="true">prefix</span>
+            <div>
+              <p>
+                Command-prefix allowlists (<span class="mono">KARUCODE_ALLOW_COMMANDS</span>) —
+                prefixes that are never prompted for.
+              </p>
+            </div>
           </li>
           <li class="audited__row">
-            <p>Per-path auto-approval — a path you approved stops asking.</p>
+            <span class="audited__key mono" aria-hidden="true">paths</span>
+            <div>
+              <p>Per-path auto-approval — a path you approved stops asking.</p>
+            </div>
           </li>
           <li class="audited__row">
-            <p>
-              <span class="mono">KARUCODE_LOCK_SETTINGS=1</span> removes the UI settings layer, so a
-              deployment can pin settings from the environment and reject browser edits with
-              <span class="mono">403</span>.
-            </p>
+            <span class="audited__key mono" aria-hidden="true">lock</span>
+            <div>
+              <p>
+                <span class="mono">KARUCODE_LOCK_SETTINGS=1</span> removes the UI settings layer, so
+                a deployment can pin settings from the environment and reject browser edits with
+                <span class="mono">403</span>.
+              </p>
+            </div>
           </li>
           <li class="audited__row">
-            <p>
-              <span class="mono">KARUCODE_ADMIN_TOKEN</span> is required to change approvals or the
-              endpoint.
-            </p>
+            <span class="audited__key mono" aria-hidden="true">admin</span>
+            <div>
+              <p>
+                <span class="mono">KARUCODE_ADMIN_TOKEN</span> is required to change approvals or
+                the endpoint.
+              </p>
+            </div>
           </li>
         </ul>
       </aside>
@@ -653,16 +668,31 @@ const MODES = [
   .audited__row {
     padding: 14px 0;
     border-top: 1px solid var(--line-soft);
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 14px;
   }
 
   .audited__row:last-child {
     border-bottom: 1px solid var(--line-soft);
   }
 
+  .audited__key {
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 2px;
+  }
+
   .audited__row p {
     font-size: var(--fs-small);
     line-height: 1.55;
     color: var(--text-2);
+  }
+
+  .audited__row p .mono {
+    overflow-wrap: anywhere;
   }
 
   .audited__row .side__head {
@@ -676,9 +706,14 @@ const MODES = [
     }
   }
 
-  @media (max-width: 680px) {
-    .audited {
+  @media (max-width: 520px) {
+    .audited__row {
       grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
+    }
+
+    .audited__key {
+      padding-top: 0;
     }
   }
 </style>
