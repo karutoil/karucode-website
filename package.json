@@ -12,7 +12,7 @@
     "check:types": "astro check",
     "check:links": "node scripts/check-links.mjs",
     "check": "npm run check:types && npm run build && npm run check:links && npm run check:csp",
-    "deploy": "npm run check && npx wrangler pages deploy dist --project-name karucode-website",
+    "deploy": "npm run check && npx wrangler deploy",
     "check:csp": "node scripts/csp-hashes.mjs --check"
   },
   "dependencies": {

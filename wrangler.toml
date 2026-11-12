@@ -1,4 +1,5 @@
-# Cloudflare Pages project config. Build with `npm run build`, deploy dist/.
 name = "karucode-website"
-compatibility_date = "2026-01-01"
-pages_build_output_dir = "dist"
+compatibility_date = "2026-11-12"
+
+[assets]
+directory = "./dist"
