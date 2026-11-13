@@ -32,6 +32,8 @@ interface Props {
   toc: TocItem[];
   /** destination of the "Edit on GitHub" link */
   edit?: string;
+  /** wider measure for an index page whose rows would otherwise wrap to death */
+  wide?: boolean;
   prev?: PageLink;
   next?: PageLink;
 }
@@ -45,6 +47,7 @@ const {
   lede,
   toc,
   edit = SITE.repo,
+  wide = false,
   prev,
   next,
 } = Astro.props;
@@ -81,24 +84,26 @@ const {
         </div>
       </header>
 
-      <div class="docs__body">
-        <nav class="docs__toc" aria-labelledby="docs-toc-title">
-          <p class="label docs__toc-title" id="docs-toc-title">On this page</p>
-          <ol class="docs__toc-list">
-            {
-              toc.map((item) => (
-                <li>
-                  <a class="docs__toc-link" href={`#${item.id}`} data-toc-link={item.id}>
-                    {item.label}
-                  </a>
-                </li>
-              ))
-            }
-          </ol>
-        </nav>
+      <div class:list={['docs__body', { 'docs__body--solo': !toc.length }]}>
+        {
+          toc.length > 0 && (
+            <nav class="docs__toc" aria-labelledby="docs-toc-title">
+              <p class="label docs__toc-title" id="docs-toc-title">On this page</p>
+              <ol class="docs__toc-list">
+                {toc.map((item) => (
+                  <li>
+                    <a class="docs__toc-link" href={`#${item.id}`} data-toc-link={item.id}>
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )
+        }
 
         <div class="docs__main">
-          <article class="prose docs__article">
+          <article class:list={['prose', 'docs__article', { 'docs__article--wide': wide }]}>
             <slot />
           </article>
 
@@ -318,6 +323,10 @@ const {
     max-width: 70ch;
   }
 
+  .docs__article--wide {
+    max-width: 88ch;
+  }
+
   /* base.css pads scroll targets for the sticky nav; the article's headings
      don't need the extra scroll-margin on top of it. */
   .docs__article :global(h2),
@@ -397,6 +406,11 @@ const {
       grid-template-columns: 200px minmax(0, 1fr);
       gap: clamp(36px, 4vw, 64px);
       padding-top: clamp(32px, 3.4vw, 48px);
+    }
+
+    /* A page with no `##` sections (an index, a search) has no sidebar to sit in. */
+    .docs__body--solo {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .docs__toc {

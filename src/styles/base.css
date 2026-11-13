@@ -565,8 +565,47 @@ pre.code b,
   border: 1px solid var(--line);
 }
 
+/* Fenced blocks from the imported markdown. Same surface as `.code`, because
+   they are the same thing: a command, a file, a diagram you could run. */
+.prose pre {
+  font-family: var(--kc-font-mono);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  tab-size: 2;
+  overflow-x: auto;
+  padding: 18px 20px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--kc-radius);
+  color: var(--text-2);
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  white-space: pre;
+}
+
+/* A wide diagram scrolls inside its own box; the page never scrolls sideways. */
+@media (max-width: 520px) {
+  .prose pre {
+    font-size: 0.8125rem;
+  }
+}
+
 /* tables: config keys, env vars, model facts */
 .table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--kc-radius);
+  background: var(--bg-raised);
+}
+
+/* Markdown tables have no wrapper to scroll, so the table is the scroll box. */
+.prose table {
+  display: block;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--kc-radius);

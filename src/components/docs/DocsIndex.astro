@@ -1,0 +1,136 @@
+---
+/**
+ * Every page the docs have, grouped the way the repository's own nav groups
+ * them. Generated from the manifest, so a new topic appears here the moment the
+ * karucode build produces it.
+ */
+import { DOCS } from '../../../.karucode-docs/manifest';
+
+const byUrl = new Map([DOCS.home, ...DOCS.pages].map((page) => [page.url, page]));
+/** The only group with a page of its own: the searchable reference index. */
+const GROUP_INDEX: Record<string, string> = { Reference: '/docs/reference/' };
+---
+
+<nav class="doc-index" aria-labelledby="doc-index-title">
+  <h2 id="doc-index-title">All pages</h2>
+
+  <div class="doc-index__groups">
+    {
+      DOCS.groups.map((group) => (
+        <div class="doc-index__group">
+          <p class="doc-index__head">
+            <span class="label doc-index__name">{group.name}</span>
+            <span class="doc-index__count">{group.urls.length}</span>
+            {GROUP_INDEX[group.name] && (
+              <a class="doc-index__more" href={GROUP_INDEX[group.name]}>
+                Index
+              </a>
+            )}
+          </p>
+          <ul class="doc-index__list">
+            {group.urls.map((url) => {
+              const page = byUrl.get(url);
+              return (
+                page && (
+                  <li>
+                    <a class="doc-index__link" href={url}>
+                      {page.title}
+                    </a>
+                  </li>
+                )
+              );
+            })}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+</nav>
+
+<style>
+  .doc-index__groups {
+    display: grid;
+    gap: 32px;
+    margin-top: 20px;
+  }
+
+  .doc-index__head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .doc-index__name {
+    font-family: var(--kc-font-mono);
+    font-size: var(--fs-micro);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .doc-index__count {
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-3);
+  }
+
+  .doc-index__more {
+    margin-left: auto;
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .doc-index__more:hover {
+    color: var(--accent);
+  }
+
+  .doc-index__list {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .doc-index__list > li {
+    padding: 0;
+    margin: 0;
+    break-inside: avoid;
+  }
+
+  /* the global `.prose li::before` bullet would double the link underline */
+  .doc-index__list > li::before {
+    content: none;
+  }
+
+  .doc-index__link {
+    display: block;
+    padding-block: 4px;
+    font-size: var(--fs-small);
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: var(--text-2);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .doc-index__link:hover {
+    color: var(--accent);
+  }
+
+  @media (min-width: 620px) {
+    .doc-index__list {
+      columns: 2;
+      column-gap: 40px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .doc-index__list {
+      columns: 3;
+    }
+  }
+</style>

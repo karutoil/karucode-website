@@ -1,0 +1,268 @@
+---
+/**
+ * The reference index: every topic the karucode binary carries, with the summary
+ * and the identifiers each one answers to. Built from `docs/internal/index.json`
+ * (via the manifest), which the repository writes when it compiles its docs — so
+ * a topic added in the code appears here without anyone touching this site.
+ */
+import Docs from '../../../layouts/Docs.astro';
+import Source from '../../../components/docs/Source.astro';
+import { DOCS } from '../../../../.karucode-docs/manifest';
+
+const topics = DOCS.pages.filter((page) => page.reference);
+const lede =
+  'Every behaviour karucode documents about itself: the flag, the route, the config key and the trap, written next to the code that implements it.';
+---
+
+<Docs
+  title="Reference"
+  description="Every behaviour karucode documents about itself, one page per topic, generated from the source tree."
+  path="/docs/reference/"
+  section="Reference"
+  lede={lede}
+  toc={[]}
+  wide
+  edit={`${DOCS.source.repo}/tree/main/docs/internal`}
+  prev={{ href: '/docs/', title: 'Documentation' }}
+>
+  <h2 id="topics">All topics</h2>
+
+  <div class="ref-filter">
+    <label class="ref-filter__label label" for="ref-q">Filter by name, environment variable or route</label>
+    <input
+      class="ref-filter__input"
+      id="ref-q"
+      type="search"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      placeholder="approvals, KARUCODE_AUTH_TOKEN, POST /api/…"
+      data-ref-q
+    />
+    <button class="ref-filter__reset" type="button" data-ref-reset hidden>Clear</button>
+  </div>
+
+  <p class="ref-status" role="status" aria-live="polite" data-ref-status>{topics.length} topics</p>
+
+  <ul class="ref-list">
+    {
+      topics.map((topic) => (
+        <li
+          class="ref-item"
+          data-ref-item
+          data-search={[topic.title, topic.summary, ...topic.tags, ...topic.appliesTo]
+            .join(' ')
+            .toLowerCase()}
+        >
+          <a class="ref-item__title" href={topic.url}>
+            {topic.title}
+          </a>
+          <p class="ref-item__summary">{topic.summary}</p>
+          {topic.tags.length > 0 && (
+            <p class="ref-item__tags">{topic.tags.slice(0, 5).join(' · ')}</p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="ref-empty" data-ref-empty hidden>
+    No topic matches that. <a href="/docs/">The rest of the docs</a> may have it.
+  </p>
+
+  <Source />
+</Docs>
+
+<script>
+  // Filter the topic list in place. Every item is already in the HTML, so the
+  // page works without this: the script only hides what does not match and says
+  // how many are left.
+  const input = document.querySelector<HTMLInputElement>('[data-ref-q]');
+  const items = Array.from(document.querySelectorAll<HTMLElement>('[data-ref-item]'));
+  const status = document.querySelector<HTMLElement>('[data-ref-status]');
+  const reset = document.querySelector<HTMLButtonElement>('[data-ref-reset]');
+  const empty = document.querySelector<HTMLElement>('[data-ref-empty]');
+
+  if (input && status && items.length) {
+    const total = items.length;
+
+    const update = () => {
+      const query = input.value.trim().toLowerCase();
+      // Every word has to appear somewhere in the topic, so "auth token" and
+      // "token auth" both find the topic that mentions both.
+      const words = query.split(/\s+/).filter(Boolean);
+      let shown = 0;
+
+      for (const item of items) {
+        const haystack = item.dataset.search ?? '';
+        const match = words.every((word) => haystack.includes(word));
+        item.hidden = !match;
+        if (match) shown++;
+      }
+
+      status.textContent = query
+        ? `${shown} of ${total} topics match “${input.value.trim()}”`
+        : `${total} topics`;
+      if (reset) reset.hidden = !query;
+      if (empty) empty.hidden = shown !== 0;
+    };
+
+    input.addEventListener('input', update);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        input.value = '';
+        update();
+      }
+    });
+    reset?.addEventListener('click', () => {
+      input.value = '';
+      update();
+      input.focus();
+    });
+    update();
+  }
+</script>
+
+<style>
+  .ref-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    margin-top: 18px;
+  }
+
+  .ref-filter__label {
+    width: 100%;
+    font-family: var(--kc-font-mono);
+    font-size: var(--fs-micro);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .ref-filter__input {
+    flex: 1 1 22ch;
+    min-width: 0;
+    padding: 10px 12px;
+    font-family: var(--kc-font-mono);
+    font-size: var(--fs-small);
+    color: var(--text);
+    background: var(--bg-sunk);
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius-sm);
+    transition: border-color var(--dur) var(--ease);
+  }
+
+  .ref-filter__input::placeholder {
+    color: var(--text-3);
+  }
+
+  .ref-filter__input:hover {
+    border-color: var(--line-strong);
+  }
+
+  .ref-filter__input:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .ref-filter__reset {
+    padding: 8px 10px;
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius-sm);
+    transition:
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .ref-filter__reset:hover {
+    color: var(--text);
+    border-color: var(--line-strong);
+  }
+
+  .ref-status {
+    margin-top: 14px;
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+  }
+
+  .ref-list {
+    display: grid;
+    gap: 0;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .ref-item {
+    display: grid;
+    gap: 5px;
+    padding: 16px 0 15px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  /* the global `.prose li::before` bullet belongs to running text, not to rows */
+  .ref-list > .ref-item::before {
+    content: none;
+  }
+
+  .ref-item[hidden] {
+    display: none;
+  }
+
+  .ref-item__title {
+    font-size: var(--fs-body);
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+    color: var(--text);
+    border-bottom: 1px solid transparent;
+    transition:
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .ref-item__title:hover {
+    color: var(--accent);
+    border-bottom-color: var(--line-gold);
+  }
+
+  .ref-item__summary {
+    max-width: 68ch;
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+
+  .ref-item__tags {
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    color: var(--text-3);
+  }
+
+  .ref-empty {
+    margin-top: 20px;
+    padding: 18px 20px;
+    font-size: var(--fs-small);
+    color: var(--text-2);
+    background: var(--bg-sunk);
+    border: 1px solid var(--line);
+    border-radius: var(--kc-radius);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ref-filter__input,
+    .ref-filter__reset,
+    .ref-item__title {
+      transition: none;
+    }
+  }
+</style>

@@ -1,0 +1,82 @@
+---
+/**
+ * Where this page came from. Not decoration: it is the receipt that the site is
+ * republishing the repository's docs at a named revision instead of a copy of
+ * them, which is the whole reason the docs are imported rather than written.
+ */
+import { DOCS } from '../../../.karucode-docs/manifest';
+
+const { source, counts } = DOCS;
+const sha = source.sha ? source.sha.slice(0, 7) : 'worktree';
+const date = source.date
+  ? new Date(source.date).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    })
+  : null;
+---
+
+<footer class="docs-src">
+  <p class="docs-src__line">
+    <span>Generated from</span>
+    {
+      source.sha ? (
+        <a class="docs-src__link" href={`${source.repo}/commit/${source.sha}`}>
+          {source.label.replace(/^.*\//, '')}@{sha}
+        </a>
+      ) : (
+        <span>{sha}</span>
+      )
+    }
+    {date && <span>· {date}</span>}
+    <span>· {counts.pages} pages</span>
+  </p>
+  <p class="docs-src__note">
+    The documentation lives in the
+    <a class="docs-src__link" href={`${source.repo}/tree/main/docs`}>karucode repository</a>.
+    Edit it there; this page is rebuilt from it.
+  </p>
+</footer>
+
+<style>
+  .docs-src {
+    display: grid;
+    gap: 6px;
+    margin-top: clamp(40px, 5vw, 64px);
+    padding-top: 18px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .docs-src__line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: var(--kc-font-mono);
+    font-size: 0.6875rem;
+    line-height: 1.6;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+  }
+
+  .docs-src__note {
+    max-width: 60ch;
+    font-size: var(--fs-micro);
+    line-height: 1.6;
+    color: var(--text-3);
+  }
+
+  .docs-src__link {
+    color: var(--text-2);
+    border-bottom: 1px solid var(--line);
+    transition:
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .docs-src__link:hover {
+    color: var(--accent);
+    border-bottom-color: var(--line-gold);
+  }
+</style>

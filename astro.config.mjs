@@ -10,4 +10,10 @@ export default defineConfig({
   compressHTML: true,
   prefetch: { prefetchAll: true, defaultStrategy: 'viewport' },
   devToolbar: { enabled: false },
+  markdown: {
+    // The docs are typed, not published: token colours from a highlighter theme
+    // would be the only place on this site where a hue is not from tokens.css.
+    // `base.css` styles `.prose pre` in the site's own greys and gold.
+    syntaxHighlight: false,
+  },
 });

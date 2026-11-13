@@ -1,0 +1,12 @@
+# Cloudflare Pages redirects. `astro preview` does not apply this file — it is
+# only live on the deployed site (and `wrangler pages dev dist`).
+#
+# Three hand-written pages were replaced by the docs they duplicated, which are
+# now imported from the karucode repository at build time (scripts/sync-docs.mjs).
+# The old URLs are published and linked, so they redirect rather than 404.
+#
+# from                    to                                status
+/security/                /docs/security/                   301
+/security                 /docs/security/                   301
+/docs/configuration/      /docs/reference/configuration/    301
+/docs/configuration       /docs/reference/configuration/    301

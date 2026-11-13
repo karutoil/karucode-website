@@ -1,235 +1,39 @@
 ---
+/**
+ * The docs home is the karucode repository's README, imported at build time.
+ * Nothing on this page is written here: the front door, the quick start and the
+ * contents table all come from `README.md`, so the site cannot drift from it.
+ */
+import { getEntry, render } from 'astro:content';
 import Docs from '../../layouts/Docs.astro';
-import StartHere from '../../components/docs/StartHere.astro';
-import { SITE } from '../../site';
+import DocsIndex from '../../components/docs/DocsIndex.astro';
+import Source from '../../components/docs/Source.astro';
+import { DOCS } from '../../../.karucode-docs/manifest';
 
-const TOC = [
-  { id: 'what-it-does', label: 'What it does' },
-  { id: 'start-here', label: 'Start here' },
-  { id: 'how-it-is-put-together', label: 'How it is put together' },
-  { id: 'what-it-refuses-to-do', label: 'What it refuses to do' },
-  { id: 'requirements', label: 'Requirements' },
-];
+const { home } = DOCS;
+const entry = await getEntry('docs', home.id);
+if (!entry) throw new Error(`docs: ${home.path} was not staged — run \`npm run sync:docs\``);
+const { Content, headings } = await render(entry);
 
-const START = [
-  {
-    meta: '01',
-    href: '/docs/quickstart/',
-    title: 'Quick start',
-    note: 'Nothing installed yet. One script, the wizard, then your first task.',
-  },
-  {
-    meta: '02',
-    href: '/docs/configuration/',
-    title: 'Configuration',
-    note: 'It runs and you want to change how. Environment variables, TOML, plugins, MCP, approvals.',
-  },
-  {
-    meta: '03',
-    href: '/security/',
-    title: 'Security',
-    note: 'You are about to bind it to an interface or leave it unattended. Read this before you do.',
-  },
-];
+const toc = headings
+  .filter((heading) => heading.depth === 2)
+  .map((heading) => ({ id: heading.slug, label: heading.text }));
+
+const first = DOCS.pages[0];
 ---
 
 <Docs
-  title="karucode"
-  headTitle="Docs"
-  description="Documentation for karucode: what it does, how it is put together, what it refuses to do, and what it needs to run."
-  path="/docs/"
+  title={home.title}
+  headTitle="Documentation"
+  description={home.summary || undefined}
+  path={home.url}
   section="Docs"
-  lede="One binary, not a stack: 27.9 MiB of Rust, one SQLite file for state, any OpenAI-compatible endpoint, and a UI served by the same process."
-  toc={TOC}
-  edit={`${SITE.repo}/blob/main/README.md`}
-  next={{ href: '/docs/quickstart/', title: 'Quick start' }}
+  lede={home.summary}
+  toc={toc}
+  edit={home.edit}
+  next={first ? { href: first.url, title: first.title } : undefined}
 >
-  <h2 id="what-it-does">What it does</h2>
-  <p>
-    karucode is a coding agent you run yourself — and the whole of it is one binary. Point it at a
-    project and it reads the files, searches them, edits them, runs commands with streamed output,
-    and inspects git. It delegates work to subagents, and it keeps going through a multi-step task
-    until the work is done or you stop it.
-  </p>
-  <p>
-    It is one Rust binary. State lives in a SQLite database in WAL mode — projects, sessions, runs
-    and agents. The browser UI is embedded in that binary and served from the same origin, so there
-    is no Node at runtime and nothing else to deploy.
-  </p>
-  <p>
-    A run is not cut off by a turn counter. <code>max_iterations</code> defaults to
-    <code>0</code>, which means no ceiling: the model works until the task is done, you cancel it,
-    or the wall clock runs out.
-  </p>
-
-  <pre class="code kc-budget">{`max_iterations      0  no turn ceiling (default)
-max_run_secs    86400  hard wall clock, 24 h
-loop guard             stops a run repeating itself
-
-a non-zero max_iterations is an optional backstop`}</pre>
-
-  <p>
-    Approvals sit in front of every mutation: <code>ask</code> is the default for shell commands and
-    file writes. On restart, runs left in <code>running</code> become <code>interrupted</code> and
-    pending approvals <code>expired</code>. Nothing is silently retried.
-  </p>
-
-  <h2 id="start-here">Start here</h2>
-  <p>Three pages, in the order most people need them.</p>
-  <StartHere items={START} />
-
-  <h2 id="how-it-is-put-together">How it is put together</h2>
-  <p>
-    Five jobs and one database. Each one is a layer you can reason about on its own, which is the
-    point of keeping the whole thing in a single binary.
-  </p>
-
-  <dl class="kc-jobs">
-    <div class="kc-jobs__row">
-      <dt>axum API + SSE</dt>
-      <dd>
-        Serves the REST API and the embedded UI from one origin. Runs and their events stream to the
-        browser over SSE.
-      </dd>
-    </div>
-    <div class="kc-jobs__row">
-      <dt>agent loop</dt>
-      <dd>
-        Owns approvals, subagents and budgets. Independent tool calls run in parallel; anything that
-        can see a sibling’s effects — shell, plugins, MCP, subagents, approvals — runs in call order,
-        so the transcript is the one a sequential run would have produced.
-      </dd>
-    </div>
-    <div class="kc-jobs__row">
-      <dt>provider</dt>
-      <dd>
-        Any endpoint that speaks the OpenAI chat-completions API with streaming tool calls. Providers
-        are install-wide; a session can pin its own model.
-      </dd>
-    </div>
-    <div class="kc-jobs__row">
-      <dt>tools</dt>
-      <dd>Files, search, shell, git, and karucode’s own documentation — plus a PTY terminal tab
-        for you, which the model cannot call.</dd>
-    </div>
-    <div class="kc-jobs__row">
-      <dt>plugins + MCP</dt>
-      <dd>
-        Separate processes, namespaced as <code>plugin__&lt;name&gt;__&lt;tool&gt;</code> and
-        <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>, so a third-party tool cannot shadow a
-        built-in one.
-      </dd>
-    </div>
-    <div class="kc-jobs__row">
-      <dt>SQLite (WAL)</dt>
-      <dd>
-        Projects, sessions, runs and agents. This is what makes a crash survivable: a restart resumes
-        the same transcript, with unfinished runs marked <code>interrupted</code> rather than retried.
-      </dd>
-    </div>
-  </dl>
-
-  <p>
-    The home page draws the same stack as a diagram, if you want the picture:
-    <a href="/#architecture">architecture</a>.
-  </p>
-
-  <h2 id="what-it-refuses-to-do">What it refuses to do</h2>
-  <p>
-    These are properties of the design, not gaps waiting to be closed. They are listed here because
-    a tool you expose to a network should tell you where its edges are.
-  </p>
-  <ul>
-    <li>
-      <strong>No shell sandbox.</strong> Commands run as the server user. Use a container or a VM for
-      untrusted code, or for unattended <code>auto</code> mode.
-    </li>
-    <li>
-      <strong>No built-in TLS.</strong> Put a reverse proxy in front for remote access; there is no
-      certificate handling in the binary.
-    </li>
-    <li>
-      <strong>No plugin sandbox.</strong> A plugin is a separate process with your permissions. A
-      rebuilt plugin is picked up by a reload — <code>POST /api/plugins/reload</code>, or
-      <code>plugins_watch</code> — rather than by restarting the server.
-    </li>
-    <li>
-      <strong>No per-project providers</strong>, no team workspaces, no cloud sync, no hosted
-      service, no signup.
-    </li>
-  </ul>
-  <p>
-    The full list lives on the home page under <a href="/#limitations">what it doesn’t do</a>. The
-    trust boundaries — what is contained, what is not, and how to expose it — are on
-    <a href="/security/">Security</a>.
-  </p>
-
-  <h2 id="requirements">Requirements</h2>
-  <ul>
-    <li>
-      <strong>Linux, x86_64</strong> for the published release. The installer needs
-      <code>curl</code> and <code>sh</code>; the systemd path needs root.
-    </li>
-    <li>
-      <strong>No compiler.</strong> The release is a prebuilt binary with the UI inside it — Rust
-      1.89+ and Node 22.12+ are only needed to build from source.
-    </li>
-    <li>
-      Optional: <code>git</code>, and <code>ripgrep</code> — a pure-Rust search fallback is built in.
-    </li>
-  </ul>
-  <p>
-    No cloud account, no signup, no telemetry. MIT licensed. Start with
-    <a href="/docs/quickstart/">Quick start</a>.
-  </p>
+  <Content />
+  <DocsIndex />
+  <Source />
 </Docs>
-
-<style>
-  .kc-budget {
-    font-size: 0.8125rem;
-    line-height: 1.85;
-    white-space: pre;
-    overflow-x: auto;
-    color: var(--text-2);
-  }
-
-  .kc-jobs {
-    display: grid;
-    border-top: 1px solid var(--line);
-  }
-
-  .kc-jobs__row {
-    display: grid;
-    gap: 4px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--line-soft);
-  }
-
-  .kc-jobs dt {
-    font-family: var(--kc-font-mono);
-    font-size: 0.8125rem;
-    letter-spacing: -0.01em;
-    color: var(--text);
-  }
-
-  .kc-jobs dd {
-    margin: 0;
-    font-size: var(--fs-small);
-    line-height: 1.6;
-    color: var(--text-2);
-  }
-
-  @media (min-width: 640px) {
-    .kc-jobs__row {
-      grid-template-columns: 172px minmax(0, 1fr);
-      align-items: baseline;
-      gap: 20px;
-    }
-  }
-
-  @media (max-width: 520px) {
-    .kc-budget {
-      font-size: 0.75rem;
-    }
-  }
-</style>

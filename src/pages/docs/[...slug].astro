@@ -1,0 +1,58 @@
+---
+/**
+ * One route for every doc in the karucode repository, apart from the home page.
+ *
+ * The page list, titles, summaries and URLs come from `.karucode-docs/manifest.ts`,
+ * which `scripts/sync-docs.mjs` writes before the build: this file knows how a doc
+ * looks, never which docs exist.
+ */
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Docs from '../../layouts/Docs.astro';
+import Source from '../../components/docs/Source.astro';
+import { DOCS, type DocPage } from '../../../.karucode-docs/manifest';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('docs');
+  const byId = new Map(DOCS.pages.map((page) => [page.id, page]));
+  return entries.flatMap((entry) => {
+    const page = byId.get(entry.id);
+    // The home page is README.md, rendered by docs/index.astro.
+    return page ? [{ params: { slug: page.id }, props: { entry, page } }] : [];
+  });
+}
+
+interface Props {
+  entry: CollectionEntry<'docs'>;
+  page: DocPage;
+}
+
+const { entry, page } = Astro.props;
+const { Content, headings } = await render(entry);
+
+/* The sidebar is the page's own `##` sections. Astro's heading ids come from the
+   same GitHub slugger the repository's anchors use, so `#fragment` links written
+   in one doc resolve on the other page. */
+const toc = headings
+  .filter((heading) => heading.depth === 2)
+  .map((heading) => ({ id: heading.slug, label: heading.text }));
+
+const order = [DOCS.home, ...DOCS.pages];
+const at = order.findIndex((candidate) => candidate.url === page.url);
+const link = (candidate: DocPage | undefined) =>
+  candidate ? { href: candidate.url, title: candidate.title } : undefined;
+---
+
+<Docs
+  title={page.title}
+  description={page.summary || undefined}
+  path={page.url}
+  section={page.section}
+  lede={page.summary}
+  toc={toc}
+  edit={page.edit}
+  prev={link(order[at - 1])}
+  next={link(order[at + 1])}
+>
+  <Content />
+  <Source />
+</Docs>

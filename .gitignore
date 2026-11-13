@@ -32,5 +32,11 @@ Thumbs.db
 screenshots/
 *.local
 
+# imported documentation — staged from the karucode repository by
+# scripts/sync-docs.mjs before every dev/build/check. Never commit this: a
+# committed copy is exactly the duplicate the import exists to avoid.
+.karucode-docs/
+.karucode-docs-cache/
+
 # agent session state (goals, todo) — local, not part of the site
 .karucode/

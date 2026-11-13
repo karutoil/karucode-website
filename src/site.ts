@@ -22,7 +22,7 @@ export const NAV = [
   { href: '/#what-it-does', label: 'What it does' },
   { href: '/#architecture', label: 'Architecture' },
   { href: '/docs/', label: 'Docs' },
-  { href: '/security/', label: 'Security' },
+  { href: '/docs/security/', label: 'Security' },
 ] as const;
 
 export const FOOTER_LINKS = [
@@ -40,8 +40,8 @@ export const FOOTER_LINKS = [
     links: [
       { href: '/docs/', label: 'Overview' },
       { href: '/docs/quickstart/', label: 'Quick start' },
-      { href: '/docs/configuration/', label: 'Configuration' },
-      { href: '/security/', label: 'Security' },
+      { href: '/docs/reference/', label: 'Reference' },
+      { href: '/docs/security/', label: 'Security' },
     ],
   },
   {
