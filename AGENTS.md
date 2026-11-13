@@ -85,8 +85,9 @@ Reference points, and what we are taking from each:
 
 ### One install path
 
-`packaging/install.sh` is the only install method the site documents: download it with
-`curl -fsSLO`, then `sudo sh install.sh`. No `curl | sh`, no `docker build`, no
+`packaging/install.sh` is the only install method the site documents, and it is **one
+line**: `curl -fsSL <installer> | sudo sh`, with flags passed as
+`| sudo sh -s -- --workspace …`. No `docker build`, no
 `cargo run`, no "build from source" tab — those exist in the repo for contributors and
 the site is not a contributor guide. `docs/FACTS.md` records the exact commands; if one
 of them changes in the repository, it changes there first.

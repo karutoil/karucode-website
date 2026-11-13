@@ -24,7 +24,7 @@ import { SITE } from '../../site';
         to provision, and nothing to keep in sync.
       </p>
       <div class="coda__cta">
-        <a class="btn btn--primary btn--lg" href="/docs/quickstart/">Start in two commands</a>
+        <a class="btn btn--primary btn--lg" href="/docs/quickstart/">Install in one command</a>
         <a class="btn btn--lg" href={SITE.repo} target="_blank" rel="noopener noreferrer">
           Source on GitHub
         </a>
@@ -36,8 +36,7 @@ import { SITE } from '../../site';
         class="coda__cmd"
         label="shell"
         wrap
-        command={`curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
-sudo sh install.sh --workspace /srv/karucode/workspace`}
+        command="curl -fsSL https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh | sudo sh"
       />
       <dl class="coda__facts">
         <div><dt>binary</dt><dd>27.9 MiB</dd></div>

@@ -214,37 +214,55 @@ sizes. Never present them as a guarantee or a comparison.
 | `KARUCODE_TUNNEL` | `none` | `none`, `cloudflare` or `custom` |
 | `KARUCODE_TRUSTED_PROXIES` | empty | comma-separated CIDRs whose forwarded headers are believed |
 
-## Install path (there is one)
+## Install path (there is one, and it is one line)
 
 The release is a prebuilt binary. `packaging/install.sh` is the only install method, and
-the three forms below are the same script:
+the site documents it as **a single line**: the script is streamed into `sh`. The three
+forms below are the same script.
 
 ```bash
 # service install (needs root): binary + hardened unit, enabled and started
-curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
-sudo sh install.sh --workspace /srv/karucode/workspace
+curl -fsSL https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh | sudo sh
+
+# the same line naming the first project: flags go after `sh -s --`
+curl -fsSL https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh \
+  | sudo sh -s -- --workspace /srv/karucode/workspace
 
 # binary only, no root, no systemd
-sh install.sh --prefix "$HOME/.local" --no-systemd
+curl -fsSL https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh \
+  | sh -s -- --prefix "$HOME/.local" --no-systemd
+```
 
-# upgrade = re-run it (or pin a release)
-sudo sh install.sh
-sudo sh install.sh --version 0.1.0
+Upgrading and pinning are the same line again — re-running it is the upgrade:
+
+```bash
+curl -fsSL .../install.sh | sudo sh                      # newest build
+curl -fsSL .../install.sh | sudo sh -s -- --version 107  # stay on build 107
 ```
 
 What it does, and what may be claimed about it:
 
-- Downloads `karucode-<version>-x86_64-unknown-linux-gnu.tar.gz`, verifies it against the
-  release's `SHA256SUMS`, and only then unpacks. **Nothing is piped into a shell** — do not
-  write `curl | bash` anywhere.
+- **The script is what is piped; the artifact never is.** The release tarball
+  (`karucode-<version>-x86_64-unknown-linux-gnu.tar.gz`) is downloaded to a temporary file,
+  verified against the release's `SHA256SUMS`, and only then unpacked. The allowed claim is
+  "the tarball is checksum-verified before anything is unpacked" — **never** "nothing is
+  piped into a shell", because the installer itself is.
+- The script is a plain POSIX `sh` file, readable at that URL without running it. The
+  careful form — `curl -fsSLO <installer>`, read it, `sudo sh install.sh` — is a second
+  sentence for people who want it, not the documented primary path.
 - Installs to `<prefix>/bin/karucode`, keeping the previous binary as `karucode.old`.
 - Runs as the account that ran the installer (`$SUDO_USER`, then `$LOGNAME`, then the
   session login uid); never root, never a newly created account.
 - Writes site paths to `/etc/systemd/system/karucode.service.d/10-install.conf` so
   re-running it for an upgrade cannot lose them. `20-local.conf` is yours.
 - Reports success only once `/api/health` answers; on failure the previous unit, drop-in
-  and binary are restored (exit 2).
-- `--dry-run` prints the plan and changes nothing.
+  and binary are restored. `--dry-run` prints the plan and changes nothing.
+- **Versions are build numbers, not semver.** Every commit on `main` is a release, tagged
+  `v<build>` — `karucode --version` prints `karucode 107 (abf0a42…)`. There is no
+  `0.1.0`; `--version 107` is how you pin.
+- **Self-update once installed:** `karucode update --check` (exit 0 = up to date, 3 = a
+  newer build exists), `sudo karucode update --apply --restart` (staged, re-verified by
+  running it once with `--version`, old binary kept), or Settings → Updates in the UI.
 
 Release shape: one target, `x86_64-unknown-linux-gnu`, produced by the `release` job on a
 `v*` tag, with the version taken from the tag and required to match `Cargo.toml`.

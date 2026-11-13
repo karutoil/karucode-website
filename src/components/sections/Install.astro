@@ -2,11 +2,12 @@
 /**
  * 06 — Install.
  *
- * There is exactly one install method: packaging/install.sh, which takes the
- * released tarball, checks it against the release SHA256SUMS and installs the
- * binary (plus a systemd unit, unless you say otherwise). The three tabs are
- * modes of that one script, not competing routes — no source build, no
- * container, no cargo. Every command exists as written.
+ * There is exactly one install method and it is one line: packaging/install.sh
+ * streamed into sh. The script downloads the released tarball, checks it against
+ * the release SHA256SUMS and installs the binary (plus a systemd unit, unless you
+ * say otherwise). The three tabs are modes of that one line, not competing
+ * routes — no source build, no container, no cargo. Every command exists as
+ * written.
  *
  * All panels are rendered in the HTML; JS only hides the inactive ones, so the
  * panel still reads with JS off.
@@ -20,13 +21,13 @@ const TABS = [
   { id: 'upgrade', label: 'Upgrade' },
 ];
 
-/** The only install path there is. Downloaded to a file, then run. */
+/** The only install path there is. Streamed into sh; flags go after `sh -s --`. */
 const INSTALLER = 'https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh';
 
 const NOTES = [
   {
     label: 'checksum',
-    body: 'The tarball is checked against the release SHA256SUMS before anything is unpacked.',
+    body: 'The release tarball is verified against SHA256SUMS before anything is unpacked — the script is what gets piped, never the binary.',
   },
   {
     label: 'runs as you',
@@ -45,8 +46,8 @@ const NOTES = [
       <SectionHead
         num="06"
         kicker="Install"
-        title="One script, one binary, one service."
-        lede="It downloads the release tarball, verifies it against SHA256SUMS, then installs the binary and a systemd unit. No Rust, no Node, no container — and nothing piped into a shell."
+        title="One line, one binary, one service."
+        lede="The line streams a plain shell script; the script checks the release tarball against SHA256SUMS, then installs the binary and a hardened systemd unit. No Rust, no Node, no container."
         id="install-head"
       />
     </div>
@@ -78,37 +79,23 @@ const NOTES = [
           aria-labelledby="tab-service"
           tabindex="0"
         >
-          <ol class="steps">
-            <li class="step">
-              <span class="step__num mono">01</span>
-              <div class="step__body">
-                <p class="step__note">
-                  Fetch the installer from the repository. It is a plain POSIX shell script, so you
-                  can read it before you run it.
-                </p>
-                <Cmd label="shell" wrap command={`curl -fsSLO ${INSTALLER}`} />
-              </div>
-            </li>
-            <li class="step">
-              <span class="step__num mono">02</span>
-              <div class="step__body">
-                <p class="step__note">
-                  Run it with the directory sessions start in. It installs to
-                  <span class="mono">/usr/local/bin</span>, enables the unit at boot and starts it.
-                </p>
-                <Cmd
-                  label="shell"
-                  wrap
-                  command="sudo sh install.sh --workspace /srv/karucode/workspace"
-                />
-              </div>
-            </li>
-          </ol>
+          <p class="tpanel__note">
+            Paste one line. Flags go after <span class="mono">sh -s --</span> so the script itself
+            still comes from the pipe; <span class="mono">--workspace</span> names the directory
+            sessions start in.
+          </p>
+          <Cmd
+            label="shell"
+            wrap
+            command={`curl -fsSL ${INSTALLER} | sudo sh -s -- --workspace /srv/karucode/workspace`}
+          />
           <p class="tpanel__foot">
-            It reports success only once <span class="mono">/api/health</span> answers. The previous
-            binary is kept as <span class="mono">karucode.old</span>, and a failed start restores it.
-            There is no default workspace: drop <span class="mono">--workspace</span> and the server
-            starts with no project, which you add in the web UI.
+            It installs the binary to <span class="mono">/usr/local/bin</span>, writes a hardened
+            systemd unit, enables it at boot, starts it, and reports success only once
+            <span class="mono">/api/health</span> answers. The previous binary is kept as
+            <span class="mono">karucode.old</span> and a failed start restores it. Drop
+            <span class="mono">--workspace</span> and the server starts with no project, which you
+            add in the web UI. <span class="mono">--dry-run</span> prints the whole plan first.
           </p>
         </div>
 
@@ -119,22 +106,15 @@ const NOTES = [
           aria-labelledby="tab-user"
           tabindex="0"
         >
-          <ol class="steps">
-            <li class="step">
-              <span class="step__num mono">01</span>
-              <div class="step__body">
-                <p class="step__note">
-                  The same script, with no root and no systemd: the binary goes into your own
-                  <span class="mono">~/.local/bin</span>.
-                </p>
-                <Cmd
-                  label="shell"
-                  wrap
-                  command={`curl -fsSLO ${INSTALLER}\nsh install.sh --prefix "$HOME/.local" --no-systemd`}
-                />
-              </div>
-            </li>
-          </ol>
+          <p class="tpanel__note">
+            The same line, with no root and no systemd: the binary goes into your own
+            <span class="mono">~/.local/bin</span>.
+          </p>
+          <Cmd
+            label="shell"
+            wrap
+            command={`curl -fsSL ${INSTALLER} | sh -s -- --prefix "$HOME/.local" --no-systemd`}
+          />
           <p class="tpanel__foot">
             Then run it in the foreground with
             <span class="mono">karucode --workspace /path/to/project</span>. State lives in
@@ -149,28 +129,22 @@ const NOTES = [
           aria-labelledby="tab-upgrade"
           tabindex="0"
         >
-          <ol class="steps">
-            <li class="step">
-              <span class="step__num mono">01</span>
-              <div class="step__body">
-                <p class="step__note">
-                  Re-running the installer <em>is</em> the upgrade: it fetches the latest release and
-                  restarts the service. To stay on a version, name it.
-                </p>
-                <Cmd
-                  label="shell"
-                  wrap
-                  command={`sudo sh install.sh\nsudo sh install.sh --version 0.1.0   # pin a release`}
-                />
-              </div>
-            </li>
-          </ol>
+          <p class="tpanel__note">
+            Re-running the same line <em>is</em> the upgrade: it fetches the newest build and
+            restarts the service. To stay on a build, pass <span class="mono">--version &lt;build&gt;</span>.
+          </p>
+          <Cmd
+            label="shell"
+            wrap
+            command={`curl -fsSL ${INSTALLER} | sudo sh\ncurl -fsSL ${INSTALLER} | sudo sh -s -- --version 107`}
+          />
           <p class="tpanel__foot">
-            Your workspace, user, port and data directory live in a drop-in at
-            <span class="mono">/etc/systemd/system/karucode.service.d/10-install.conf</span>, which
-            every run rewrites from what it finds — so an upgrade cannot lose the configuration that
-            made the service start. <span class="mono">--dry-run</span> prints a run without doing
-            it.
+            Your workspace, service user, port and data directory live in a drop-in at
+            <span class="mono">/etc/systemd/system/karucode.service.d/10-install.conf</span> that
+            every run rewrites from what it finds, so an upgrade cannot lose them. Versions are
+            build numbers — every commit on <span class="mono">main</span> is a release.
+            <span class="mono">karucode update --check</span> tells you whether a newer build
+            exists, and Settings → Updates has the install button.
           </p>
         </div>
       </div>
@@ -305,47 +279,15 @@ const NOTES = [
     display: none;
   }
 
-  .steps {
-    display: grid;
-    gap: 18px;
-  }
-
-  .step {
-    display: grid;
-    grid-template-columns: 22px minmax(0, 1fr);
-    gap: 12px;
-    align-items: start;
-  }
-
-  @media (max-width: 560px) {
-    .step {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 8px;
-    }
-
-    .step__num {
-      display: none;
-    }
-  }
-
-  .step__num {
-    font-size: 0.6875rem;
-    letter-spacing: 0.1em;
-    color: var(--text-3);
-    padding-top: 14px;
-  }
-
-  .step__body {
-    display: grid;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .step__note {
+  .tpanel__note {
     font-size: var(--fs-small);
     line-height: 1.55;
     color: var(--text-2);
     max-width: 62ch;
+  }
+
+  .tpanel__note .mono {
+    color: var(--text);
   }
 
   .tpanel__foot {

@@ -27,7 +27,7 @@ import Readout from './Readout.astro';
       </p>
 
       <div class="hero__cta reveal">
-        <a class="btn btn--primary btn--lg" href="/docs/quickstart/">Install in two commands</a>
+        <a class="btn btn--primary btn--lg" href="/docs/quickstart/">Install in one command</a>
         <a class="btn btn--lg" href="/docs/">Read the docs</a>
       </div>
 
@@ -35,8 +35,7 @@ import Readout from './Readout.astro';
         class="hero__cmd"
         label="shell"
         wrap
-        command={`curl -fsSLO https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh
-sudo sh install.sh --workspace .`}
+        command="curl -fsSL https://raw.githubusercontent.com/karutoil/karucode/main/packaging/install.sh | sudo sh"
       />
 
       <p class="hero__note mono">
